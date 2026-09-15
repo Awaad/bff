@@ -42,11 +42,14 @@ jobs:
       - name: Ruff format check
         run: uv run ruff format --check .
 
-      - name: mypy
-        run: uv run mypy -p scripts -p tests
+      - name: Validate Compose configuration
+        run: docker compose --env-file .env.example config --quiet
 
-      - name: Python tests
-        run: uv run pytest
+      - name: mypy
+        run: uv run mypy -p bff_control -p scripts -p tests
+
+      - name: Python tests without PostgreSQL
+        run: uv run pytest -m "not postgres"
 
       - name: Verify GitHub Actions pins
         run: uv run python scripts/check_github_actions_pins.py

@@ -97,10 +97,10 @@ def test_worker_cannot_update_bindings(
         postgres_test_db.role_connection("worker") as connection,
         pytest.raises(psycopg.errors.InsufficientPrivilege),
     ):
-            connection.execute(
-                f"UPDATE app.bindings SET {column} = %s WHERE id = %s",
-                (values[column], IDS["binding_acl"]),
-            )
+        connection.execute(
+            f"UPDATE app.bindings SET {column} = %s WHERE id = %s",
+            (values[column], IDS["binding_acl"]),
+        )
 
 
 def test_control_can_update_binding_lifecycle_column(
@@ -140,10 +140,10 @@ def test_control_cannot_mutate_binding_identity(
         postgres_test_db.role_connection("control") as connection,
         pytest.raises(psycopg.errors.InsufficientPrivilege),
     ):
-            connection.execute(
-                f"UPDATE app.bindings SET {column} = %s WHERE id = %s",
-                (value, IDS["binding_acl"]),
-            )
+        connection.execute(
+            f"UPDATE app.bindings SET {column} = %s WHERE id = %s",
+            (value, IDS["binding_acl"]),
+        )
 
 
 def test_runtime_can_update_execution_attempt_lifecycle(
@@ -178,11 +178,11 @@ def test_runtime_cannot_mutate_execution_attempt_identity(
         postgres_test_db.role_connection("runtime") as connection,
         pytest.raises(psycopg.errors.InsufficientPrivilege),
     ):
-            connection.execute(
-                """
-                UPDATE app.execution_attempts
-                SET attempt_number = 2
-                WHERE id = %s
-                """,
-                (IDS["execution_attempt_acl"],),
-            )
+        connection.execute(
+            """
+            UPDATE app.execution_attempts
+            SET attempt_number = 2
+            WHERE id = %s
+            """,
+            (IDS["execution_attempt_acl"],),
+        )

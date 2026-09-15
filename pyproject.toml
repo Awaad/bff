@@ -68,5 +68,8 @@ addopts = [
   "--strict-markers",
   "-ra",
 ]
+markers = [
+  "postgres: requires a disposable PostgreSQL instance configured by BFF_TEST_ADMIN_URL",
+]
 testpaths = ["tests"]
 asyncio_mode = "strict"

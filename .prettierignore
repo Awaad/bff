@@ -1,6 +1,7 @@
 .venv/
 .turbo/
 coverage/
+compose.yaml
 dist/
 docs/
 node_modules/

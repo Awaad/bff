@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import secrets
-from collections.abc import Iterator, Generator
+from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,7 +17,14 @@ from psycopg import Connection, sql
 from sqlalchemy import URL, make_url
 
 ROOT = Path(__file__).resolve().parents[2]
-ROLES_SQL = ROOT / "apps" / "control-api" / "migrations" / "sql" / "0001_database_roles_v2_1.sql"
+ROLES_SQL = (
+    ROOT
+    / "apps"
+    / "control-api"
+    / "migrations"
+    / "sql"
+    / "0001_database_roles_v2_1.sql"
+)
 
 GROUP_ROLES = {
     "control": "bff_control_writer",

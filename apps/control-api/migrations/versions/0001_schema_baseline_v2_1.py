@@ -16,7 +16,11 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
-_SQL_PATH = Path(__file__).resolve().parents[1] / "sql" / "0001_schema_baseline_v2_1.sql"
+_SQL_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "sql"
+    / "0001_schema_baseline_v2_1.sql"
+)
 
 
 def upgrade() -> None:

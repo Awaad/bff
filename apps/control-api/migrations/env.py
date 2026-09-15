@@ -5,9 +5,8 @@ from __future__ import annotations
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
-
 from bff_control.core.settings import get_database_settings
+from sqlalchemy import engine_from_config, pool
 
 config = context.config
 
