@@ -7,14 +7,18 @@
   },
   "scripts": {
     "build": "turbo run build",
+    "boundaries": "uv run python scripts/check_python_boundaries.py && node scripts/check_ts_boundaries.mjs",
     "check": "turbo run check",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "contract:generate": "pnpm --filter @bff/api-contract generate",
-    "contract:check": "pnpm --filter @bff/api-contract check"
+    "contract:check": "pnpm --filter @bff/api-contract check",
+    "format": "prettier --write . && uv run ruff format .",
+    "format:check": "prettier --check . && uv run ruff format --check ."
   },
   "devDependencies": {
+    "prettier": "3.9.0",
     "turbo": "2.10.6",
     "typescript": "7.0.2"
   },

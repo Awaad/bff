@@ -1,0 +1,36 @@
+minimum_pre_commit_version: "4.6.2"
+default_stages: [pre-commit]
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --force-exclude
+        language: system
+        types_or: [python, pyi]
+
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format --check --force-exclude
+        language: system
+        types_or: [python, pyi]
+
+      - id: prettier
+        name: prettier
+        entry: pnpm exec prettier --check
+        language: system
+        types_or: [javascript, jsx, json, markdown, ts, tsx, yaml]
+        exclude: ^packages/api-contract/src/generated/
+
+      - id: python-boundaries
+        name: python architecture boundaries
+        entry: uv run python scripts/check_python_boundaries.py
+        language: system
+        pass_filenames: false
+
+      - id: typescript-boundaries
+        name: typescript architecture boundaries
+        entry: node scripts/check_ts_boundaries.mjs
+        language: system
+        pass_filenames: false

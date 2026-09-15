@@ -7,11 +7,59 @@ dependencies = []
 
 [dependency-groups]
 dev = [
-  "mypy>=1.17,<2",
-  "pytest>=8.4,<9",
-  "pytest-asyncio>=1.1,<2",
-  "ruff>=0.12,<1",
+  "mypy==2.3.1",
+  "pre-commit==4.6.2",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "ruff==0.16.7",
 ]
 
 [tool.uv]
 package = false
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = [
+  "packages/api-contract/src/generated",
+]
+
+[tool.ruff.lint]
+select = [
+  "ASYNC",
+  "B",
+  "C4",
+  "E",
+  "F",
+  "I",
+  "PERF",
+  "PIE",
+  "RUF",
+  "SIM",
+  "UP",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+show_error_codes = true
+pretty = true
+exclude = [
+  "packages/api-contract/src/generated/",
+]
+
+[tool.pytest.ini_options]
+minversion = "9.1"
+addopts = [
+  "--strict-config",
+  "--strict-markers",
+  "-ra",
+]
+testpaths = ["tests"]
+asyncio_mode = "strict"
