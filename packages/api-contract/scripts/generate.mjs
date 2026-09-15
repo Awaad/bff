@@ -11,12 +11,10 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const repositoryRoot = path.resolve(packageRoot, "../..");
 
 const schemaPath = path.resolve(
-  process.env.BFF_OPENAPI_SCHEMA ??
-    path.join(repositoryRoot, "artifacts/openapi/control-api.json"),
+  process.env.BFF_OPENAPI_SCHEMA ?? path.join(repositoryRoot, "artifacts/openapi/control-api.json"),
 );
 const outputPath = path.resolve(
-  process.env.BFF_OPENAPI_TYPES ??
-    path.join(packageRoot, "src/generated/openapi.d.ts"),
+  process.env.BFF_OPENAPI_TYPES ?? path.join(packageRoot, "src/generated/openapi.d.ts"),
 );
 
 try {

@@ -163,12 +163,7 @@ export async function checkRepository(root) {
     }
 
     for (const imported of imports) {
-      const target = targetForSpecifier(
-        root,
-        sourcePath,
-        imported.specifier,
-        packageMap,
-      );
+      const target = targetForSpecifier(root, sourcePath, imported.specifier, packageMap);
       if (target === null) continue;
 
       const targetClass = classify(target);
@@ -199,9 +194,7 @@ async function main() {
   return 1;
 }
 
-const invokedPath = process.argv[1]
-  ? pathToFileURL(path.resolve(process.argv[1])).href
-  : null;
+const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : null;
 
 if (invokedPath === import.meta.url) {
   process.exitCode = await main();

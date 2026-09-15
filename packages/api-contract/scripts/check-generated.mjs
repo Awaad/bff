@@ -5,21 +5,16 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-import {
-  GENERATED_HEADER,
-  generateContractFromFile,
-} from "./generator.mjs";
+import { GENERATED_HEADER, generateContractFromFile } from "./generator.mjs";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryRoot = path.resolve(packageRoot, "../..");
 
 const schemaPath = path.resolve(
-  process.env.BFF_OPENAPI_SCHEMA ??
-    path.join(repositoryRoot, "artifacts/openapi/control-api.json"),
+  process.env.BFF_OPENAPI_SCHEMA ?? path.join(repositoryRoot, "artifacts/openapi/control-api.json"),
 );
 const generatedPath = path.resolve(
-  process.env.BFF_OPENAPI_TYPES ??
-    path.join(packageRoot, "src/generated/openapi.d.ts"),
+  process.env.BFF_OPENAPI_TYPES ?? path.join(packageRoot, "src/generated/openapi.d.ts"),
 );
 
 async function exists(file) {
@@ -40,9 +35,7 @@ if (!(await exists(schemaPath))) {
     );
   }
 
-  console.log(
-    "canonical OpenAPI schema is not present yet; bootstrap contract state is valid",
-  );
+  console.log("canonical OpenAPI schema is not present yet; bootstrap contract state is valid");
   process.exit(0);
 }
 

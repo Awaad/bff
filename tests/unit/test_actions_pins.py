@@ -12,8 +12,7 @@ def _write_workflow(root: Path, body: str) -> None:
 def test_accepts_full_commit_sha(tmp_path: Path) -> None:
     _write_workflow(
         tmp_path,
-        "steps:\n"
-        "  - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n",
+        "steps:\n  - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n",
     )
 
     assert find_unpinned_actions(tmp_path) == []
@@ -22,8 +21,7 @@ def test_accepts_full_commit_sha(tmp_path: Path) -> None:
 def test_rejects_moving_major_tag(tmp_path: Path) -> None:
     _write_workflow(
         tmp_path,
-        "steps:\n"
-        "  - uses: actions/checkout@v7\n",
+        "steps:\n  - uses: actions/checkout@v7\n",
     )
 
     violations = find_unpinned_actions(tmp_path)
@@ -35,8 +33,7 @@ def test_rejects_moving_major_tag(tmp_path: Path) -> None:
 def test_allows_repository_local_actions(tmp_path: Path) -> None:
     _write_workflow(
         tmp_path,
-        "steps:\n"
-        "  - uses: ./.github/actions/setup\n",
+        "steps:\n  - uses: ./.github/actions/setup\n",
     )
 
     assert find_unpinned_actions(tmp_path) == []
@@ -45,8 +42,7 @@ def test_allows_repository_local_actions(tmp_path: Path) -> None:
 def test_container_actions_require_digest(tmp_path: Path) -> None:
     _write_workflow(
         tmp_path,
-        "steps:\n"
-        "  - uses: docker://alpine:3.22\n",
+        "steps:\n  - uses: docker://alpine:3.22\n",
     )
 
     violations = find_unpinned_actions(tmp_path)

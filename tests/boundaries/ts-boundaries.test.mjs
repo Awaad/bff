@@ -4,10 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import {
-  checkRepository,
-  extractModuleSpecifiers,
-} from "../../scripts/check_ts_boundaries.mjs";
+import { checkRepository, extractModuleSpecifiers } from "../../scripts/check_ts_boundaries.mjs";
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "bff-ts-boundaries-"));
@@ -21,10 +18,7 @@ function fixture(t) {
       fs.writeFileSync(target, content, "utf8");
     },
     package(relativeDir, name) {
-      this.write(
-        `${relativeDir}/package.json`,
-        JSON.stringify({ name, private: true }),
-      );
+      this.write(`${relativeDir}/package.json`, JSON.stringify({ name, private: true }));
     },
   };
 }
@@ -40,13 +34,7 @@ test("lexer detects TypeScript static, type-only, re-export, and dynamic imports
 
   assert.deepEqual(
     specifiers.map(({ specifier }) => specifier),
-    [
-      "@bff/contracts",
-      "@bff/runtime",
-      "@bff/shared",
-      "@bff/public-api",
-      "@bff/lazy",
-    ],
+    ["@bff/contracts", "@bff/runtime", "@bff/shared", "@bff/public-api", "@bff/lazy"],
   );
 });
 
@@ -63,10 +51,7 @@ test("blocks packages importing apps", async (t) => {
   const repo = fixture(t);
   repo.package("apps/runtime", "@bff/runtime");
   repo.package("packages/execution-engine", "@bff/execution-engine");
-  repo.write(
-    "packages/execution-engine/src/index.ts",
-    'import "@bff/runtime";\n',
-  );
+  repo.write("packages/execution-engine/src/index.ts", 'import "@bff/runtime";\n');
 
   const violations = await checkRepository(repo.root);
 
@@ -104,10 +89,7 @@ test("blocks dynamic imports that cross from worker into app", async (t) => {
   const repo = fixture(t);
   repo.package("apps/runtime", "@bff/runtime");
   repo.package("workers/outbox", "@bff/outbox-worker");
-  repo.write(
-    "workers/outbox/src/index.ts",
-    'await import("@bff/runtime");\n',
-  );
+  repo.write("workers/outbox/src/index.ts", 'await import("@bff/runtime");\n');
 
   const violations = await checkRepository(repo.root);
 
@@ -119,10 +101,7 @@ test("blocks type-only imports across forbidden package boundaries", async (t) =
   const repo = fixture(t);
   repo.package("apps/runtime", "@bff/runtime");
   repo.package("packages/contracts", "@bff/contracts");
-  repo.write(
-    "packages/contracts/src/index.ts",
-    'import type { Runtime } from "@bff/runtime";\n',
-  );
+  repo.write("packages/contracts/src/index.ts", 'import type { Runtime } from "@bff/runtime";\n');
 
   const violations = await checkRepository(repo.root);
 

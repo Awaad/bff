@@ -20,9 +20,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "ok"
-                  ],
+                  "required": ["ok"],
                   "additionalProperties": false
                 }
               }
