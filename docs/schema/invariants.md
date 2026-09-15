@@ -43,17 +43,19 @@ Classification:
 3. **DB** ConnectionRevision, Credential, CredentialRevision, SecretVersion, Operation, and OperationVersion cannot cross their parent Connection/Workspace.
 4. **APP/TX** Connection/Credential/Operation lifecycle kill switches override cached immutable artifacts.
 5. **APP** Provider adapters cannot bypass central network/security controls.
+6. **DB/APP** `auth_scheme = NONE` is the first-class unauthenticated Credential form; it has empty auth configuration and no CredentialSecretVersion.
 
 ## 5. Binding
 
 1. **DB** Binding belongs to one Project/Workspace.
-2. **DB** Binding has independent `kind = QUERY|ACTION` and `exposure_mode = PUBLIC|INTERNAL`.
+2. **DB/DB-ACL** Binding has independent `kind = QUERY|ACTION` and `exposure_mode = PUBLIC|INTERNAL`; both are stable identity attributes and application roles cannot mutate them after creation.
 3. **DB** BindingPublicIdentifier can reference only a PUBLIC Binding.
 4. **DB** At most one active public identifier exists per Binding.
 5. **DB** BindingRevision pins exact OperationVersion, ConnectionRevision, Credential, and CredentialRevision from one Connection graph.
 6. **APP** QUERY publication cannot target a WRITE OperationVersion.
 7. **APP/TX** Publication validates Project→Connection access, contracts, policies, and compiler compatibility.
 8. **APP** Runtime callers cannot select arbitrary Connection/Credential/host/privileged transport fields.
+9. **APP** Changing QUERY/ACTION kind or PUBLIC/INTERNAL exposure creates a new Binding identity rather than mutating an existing Binding.
 
 ## 6. Execution lineage
 
@@ -153,3 +155,12 @@ Classification:
 1. **APP** UUIDv7 PKs are globally unique and practically unguessable but time-ordered; they may reveal approximate creation time.
 2. **DB** Public runtime identifiers and `public_execution_ref` are separate identifiers.
 3. **APP** Public capability security never depends on secrecy of an internal UUID.
+
+
+## 16. Database application roles
+
+1. **DB-ACL** Public runtime can read all state required by runtime admission and credential resolution.
+2. **DB-ACL** Public runtime can write Executions, Attempts, IdempotencyRecords, UsageEvents, and OutboxEvents required by runtime processing.
+3. **DB-ACL** Retention/purge uses the separate `bff_retention` role; ordinary runtime/control roles do not receive blanket DELETE.
+4. **DB-ACL** Future tables receive default SELECT only for control/worker roles when created by the configured migration owner. Runtime/retention privileges remain explicit per migration.
+5. **TX/APP** Every migration adding a table or changing ownership responsibilities updates and tests ACLs.

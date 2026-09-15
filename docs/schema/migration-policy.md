@@ -137,6 +137,10 @@ Every migration PR answers:
 - Is any sensitive data touched?
 - What is rollback/recovery?
 - Does a runbook need updating?
+- Which application role owns reads/writes for every new or changed table?
+- Does `docs/security/database-roles.sql` need new explicit grants/revokes?
+- Do migration-owner `ALTER DEFAULT PRIVILEGES` still apply to objects created by this migration?
+- Do ACL integration tests prove control/runtime/worker/retention roles can do exactly the intended operations?
 
 ## Baseline rule
 
@@ -154,3 +158,12 @@ Do **not** create fake historical migration churn for a schema that was never de
 Once any shared/staging/production environment depends on `0001`, all subsequent changes become additive migrations.
 
 Database role/ACL provisioning in `security/database-roles.sql` is part of environment bootstrap and must be tested alongside migrations.
+
+
+## Database privilege migrations
+
+Schema and ACL evolution are one deployment unit.
+
+A migration introducing a new table must identify the owning service role, grant minimum required privileges, preserve write-once restrictions, verify default-privilege ownership, and include permission tests for an allowed and a denied role.
+
+Runtime and retention do not inherit blanket future-table privileges; extensions are explicit.

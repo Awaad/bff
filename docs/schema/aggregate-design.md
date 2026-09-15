@@ -3530,3 +3530,20 @@ WebhookDelivery raw payload reference may be purged independently from durable m
 ## UUIDv7 wording
 
 UUIDv7 is time-ordered and reveals approximate creation time. It is not treated as a public capability or diagnostic identifier.
+
+
+---
+
+# Schema Baseline V2.1 Clarifications — 2026-09-13
+
+## Binding semantic identity
+
+`Binding.kind` and `Binding.exposure_mode` are stable identity attributes. A capability does not transition QUERY↔ACTION or PUBLIC↔INTERNAL in place. To reuse an Operation under another exposure class, create a new Binding. Product surfaces must return a domain-level validation message rather than exposing a foreign-key error.
+
+## Unauthenticated upstreams
+
+`NONE` is a first-class Credential auth scheme. A NONE Credential has an immutable CredentialRevision describing no authentication and no CredentialSecretVersion. BindingRevision and Execution therefore keep uniform non-null Credential lineage.
+
+## Database roles
+
+The database-role specification is part of the deployable security contract. Runtime has the reads needed for admission/secret resolution and writes needed for Execution, idempotency, usage, and outbox state. Retention uses a separate delete-capable role. Future migrations must update and test ACLs explicitly.
