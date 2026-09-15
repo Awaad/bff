@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import secrets
-from collections.abc import Generator, Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -50,7 +50,7 @@ class DatabaseTestEnvironment:
     login_urls: dict[str, URL]
 
     @contextmanager
-    def owner_connection(self) -> Iterator[Connection[tuple[object, ...]]]:
+    def owner_connection(self) -> Generator[Connection[tuple[object, ...]]]:
         with psycopg.connect(
             _postgres_dsn(self.owner_url),
             autocommit=True,
@@ -132,6 +132,40 @@ def _apply_application_roles(database_url: URL) -> None:
         connection.execute(role_sql)
 
 
+def _create_role_statement(login_role: str, password: str) -> sql.Composed:
+    return sql.SQL("CREATE ROLE {} LOGIN INHERIT PASSWORD {}").format(
+        sql.Identifier(login_role),
+        sql.Literal(password),
+    )
+
+
+def _render_create_role_statement(
+    connection: Connection[tuple[object, ...]],
+    login_role: str,
+    password: str,
+) -> str:
+    rendered = _create_role_statement(login_role, password).as_string(connection)
+
+    if "$1" in rendered or "%s" in rendered:
+        raise RuntimeError(
+            "temporary LOGIN role SQL unexpectedly contains a bind placeholder",
+        )
+
+    return rendered
+
+
+def _drop_login_roles(
+    connection: Connection[tuple[object, ...]],
+    role_names: list[str],
+) -> None:
+    for role_name in role_names:
+        connection.execute(
+            sql.SQL("DROP ROLE IF EXISTS {}").format(
+                sql.Identifier(role_name),
+            ),
+        )
+
+
 def _create_login_principals(
     admin_url: URL,
     database_url: URL,
@@ -144,38 +178,34 @@ def _create_login_principals(
         _postgres_dsn(admin_url),
         autocommit=True,
     ) as connection:
-        for logical_name, group_role in GROUP_ROLES.items():
-            login_role = f"bff_test_{logical_name}_{suffix}"
-            password = secrets.token_urlsafe(24)
+        try:
+            for logical_name, group_role in GROUP_ROLES.items():
+                login_role = f"bff_test_{logical_name}_{suffix}"
+                password = secrets.token_urlsafe(24)
 
-            create_role = sql.SQL("CREATE ROLE {} LOGIN INHERIT PASSWORD {}").format(
-                sql.Identifier(login_role),
-                sql.Literal(password),
-            )
+                connection.execute(
+                    _render_create_role_statement(
+                        connection,
+                        login_role,
+                        password,
+                    ),
+                )
+                role_names.append(login_role)
 
-            # CREATE ROLE does not accept a protocol bind parameter for
-            # PASSWORD. Render the safely composed statement explicitly.
-            rendered_create_role = create_role.as_string(connection)
-
-            if "$1" in rendered_create_role or "%s" in rendered_create_role:
-                raise RuntimeError(
-                    "temporary LOGIN role SQL unexpectedly contains a bind placeholder"
+                connection.execute(
+                    sql.SQL("GRANT {} TO {}").format(
+                        sql.Identifier(group_role),
+                        sql.Identifier(login_role),
+                    ),
                 )
 
-            connection.execute(rendered_create_role)
-
-            connection.execute(
-                sql.SQL("GRANT {} TO {}").format(
-                    sql.Identifier(group_role),
-                    sql.Identifier(login_role),
+                login_urls[logical_name] = database_url.set(
+                    username=login_role,
+                    password=password,
                 )
-            )
-
-            login_urls[logical_name] = database_url.set(
-                username=login_role,
-                password=password,
-            )
-            role_names.append(login_role)
+        except BaseException:
+            _drop_login_roles(connection, role_names)
+            raise
 
     return login_urls, role_names
 
@@ -201,16 +231,11 @@ def _drop_database_and_logins(
             ),
         )
 
-        for role_name in login_roles:
-            connection.execute(
-                sql.SQL("DROP ROLE IF EXISTS {}").format(
-                    sql.Identifier(role_name),
-                ),
-            )
+        _drop_login_roles(connection, login_roles)
 
 
 @contextmanager
-def provision_database() -> Iterator[DatabaseTestEnvironment]:
+def provision_database() -> Generator[DatabaseTestEnvironment]:
     """Create, migrate and later destroy an isolated PostgreSQL test database."""
 
     admin_url = _required_admin_url()
