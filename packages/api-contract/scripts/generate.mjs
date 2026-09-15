@@ -1,17 +1,47 @@
+#!/usr/bin/env node
+
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import openapiTS, { astToString } from "openapi-typescript";
+import { fileURLToPath } from "node:url";
 
-const root = process.cwd();
-const schemaPath = process.env.BFF_OPENAPI_SCHEMA ?? path.join(root, "openapi.json");
-const outputPath = path.join(root, "src/generated/openapi.d.ts");
+import { generateContractFromFile } from "./generator.mjs";
 
-const raw = await fs.readFile(schemaPath, "utf8");
-const schema = JSON.parse(raw);
-const ast = await openapiTS(schema);
-const output = `${astToString(ast)}\n`;
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repositoryRoot = path.resolve(packageRoot, "../..");
 
+const schemaPath = path.resolve(
+  process.env.BFF_OPENAPI_SCHEMA ??
+    path.join(repositoryRoot, "artifacts/openapi/control-api.json"),
+);
+const outputPath = path.resolve(
+  process.env.BFF_OPENAPI_TYPES ??
+    path.join(packageRoot, "src/generated/openapi.d.ts"),
+);
+
+try {
+  await fs.access(schemaPath);
+} catch (error) {
+  throw new Error(
+    `canonical OpenAPI schema not found at ${schemaPath}; ` +
+      "export the control API schema before generating TypeScript contracts",
+    { cause: error },
+  );
+}
+
+const output = await generateContractFromFile(schemaPath);
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
-await fs.writeFile(outputPath, output, "utf8");
-console.log(`generated ${path.relative(root, outputPath)} from ${path.relative(root, schemaPath)}`);
+
+const temporaryPath = `${outputPath}.tmp-${process.pid}`;
+
+try {
+  await fs.writeFile(temporaryPath, output, "utf8");
+  await fs.rename(temporaryPath, outputPath);
+} finally {
+  await fs.rm(temporaryPath, { force: true });
+}
+
+console.log(
+  `generated ${path.relative(repositoryRoot, outputPath)} ` +
+    `from ${path.relative(repositoryRoot, schemaPath)}`,
+);
