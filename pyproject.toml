@@ -55,6 +55,7 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 minversion = "9.1"
 addopts = [
   "--strict-config",
