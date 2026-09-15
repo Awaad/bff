@@ -1,0 +1,17 @@
+[project]
+name = "backend-for-framer"
+version = "0.0.0"
+description = "Backend for Framer monorepo Python workspace"
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "mypy>=1.17,<2",
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=1.1,<2",
+  "ruff>=0.12,<1",
+]
+
+[tool.uv]
+package = false

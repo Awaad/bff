@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+  - workers/*
+
+# Keep dependency versions explicit in package manifests for now.
+# We can introduce pnpm catalogs once package count justifies centralization.

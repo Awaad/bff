@@ -1,0 +1,20 @@
+{
+  "name": "backend-for-framer",
+  "private": true,
+  "packageManager": "pnpm@12.4.0",
+  "engines": {
+    "node": ">=24.21.0 <25"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "check": "turbo run check",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "2.10.6",
+    "typescript": "7.0.2"
+  },
+  "license": "UNLICENSED"
+}

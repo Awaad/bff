@@ -1,0 +1,2 @@
+required-version = "==0.12.13"
+python-preference = "managed"
