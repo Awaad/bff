@@ -9,30 +9,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 CANONICAL_SCHEMA = ROOT / "docs" / "schema" / "schema.sql"
 MIGRATION_SCHEMA = (
-    ROOT
-    / "apps"
-    / "control-api"
-    / "migrations"
-    / "sql"
-    / "0001_schema_baseline_v2_1.sql"
+    ROOT / "apps" / "control-api" / "migrations" / "sql" / "0001_schema_baseline_v2_1.sql"
 )
 CANONICAL_ROLES = ROOT / "docs" / "security" / "database-roles.sql"
 MIGRATION_ROLES = (
-    ROOT
-    / "apps"
-    / "control-api"
-    / "migrations"
-    / "sql"
-    / "0001_database_roles_v2_1.sql"
+    ROOT / "apps" / "control-api" / "migrations" / "sql" / "0001_database_roles_v2_1.sql"
 )
 
 
 def canonical_schema_without_transaction_control(text: str) -> str:
-    lines = [
-        line
-        for line in text.splitlines()
-        if line.strip() not in {"BEGIN;", "COMMIT;"}
-    ]
+    lines = [line for line in text.splitlines() if line.strip() not in {"BEGIN;", "COMMIT;"}]
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -54,8 +40,7 @@ def verify() -> list[str]:
 
     if actual_roles != expected_roles:
         violations.append(
-            "database role bootstrap SQL drifted from "
-            "docs/security/database-roles.sql",
+            "database role bootstrap SQL drifted from docs/security/database-roles.sql",
         )
 
     return violations

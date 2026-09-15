@@ -17,14 +17,7 @@ from psycopg import Connection, sql
 from sqlalchemy import URL, make_url
 
 ROOT = Path(__file__).resolve().parents[2]
-ROLES_SQL = (
-    ROOT
-    / "apps"
-    / "control-api"
-    / "migrations"
-    / "sql"
-    / "0001_database_roles_v2_1.sql"
-)
+ROLES_SQL = ROOT / "apps" / "control-api" / "migrations" / "sql" / "0001_database_roles_v2_1.sql"
 
 GROUP_ROLES = {
     "control": "bff_control_writer",
@@ -155,9 +148,7 @@ def _create_login_principals(
             login_role = f"bff_test_{logical_name}_{suffix}"
             password = secrets.token_urlsafe(24)
 
-            create_role = sql.SQL(
-                "CREATE ROLE {} LOGIN INHERIT PASSWORD {}"
-            ).format(
+            create_role = sql.SQL("CREATE ROLE {} LOGIN INHERIT PASSWORD {}").format(
                 sql.Identifier(login_role),
                 sql.Literal(password),
             )
@@ -168,8 +159,7 @@ def _create_login_principals(
 
             if "$1" in rendered_create_role or "%s" in rendered_create_role:
                 raise RuntimeError(
-                    "temporary LOGIN role SQL unexpectedly contains "
-                    "a bind placeholder"
+                    "temporary LOGIN role SQL unexpectedly contains a bind placeholder"
                 )
 
             connection.execute(rendered_create_role)
@@ -188,6 +178,7 @@ def _create_login_principals(
             role_names.append(login_role)
 
     return login_urls, role_names
+
 
 def _drop_database_and_logins(
     admin_url: URL,
