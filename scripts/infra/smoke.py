@@ -118,7 +118,11 @@ def otel_ready() -> bool:
             f"http://127.0.0.1:{port}/",
             timeout=2,
         ) as response:
-            return 200 <= response.status < 300
+            status = response.status
+            if not isinstance(status, int):
+                return False
+
+            return 200 <= status < 300
     except (urllib.error.URLError, TimeoutError):
         return False
 
