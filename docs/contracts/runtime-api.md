@@ -44,3 +44,10 @@ Caller cannot choose arbitrary Connection, Credential, host, method, or privileg
 ## Pinning
 
 Once accepted, the request stays pinned to the resolved BindingRevision even if a new revision is published concurrently.
+
+
+## Execution correlation
+
+Public responses/errors expose `execution_ref`, not the internal UUIDv7 primary key.
+
+The reference is independently generated and exists for safe customer support/diagnostic correlation.

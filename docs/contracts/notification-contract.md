@@ -23,3 +23,13 @@ Provider callbacks are authenticated and deduplicated.
 Automatic cross-provider failover is not safe when previous acceptance is ambiguous.
 
 Customer notifications are separate from SRE alerts. Marketing delivery is outside this domain.
+
+
+## V1 channels
+
+Persisted V1 channels are:
+
+- EMAIL
+- IN_APP
+
+SMS and other transports are future adapter capabilities and are not valid V1 database channel values.

@@ -9,7 +9,7 @@
     "category": "AUTH",
     "message": "The configured credential is unavailable.",
     "retryable": false,
-    "execution_id": "..."
+    "execution_ref": "..."
   }
 }
 ```
@@ -27,3 +27,12 @@ Retryability is not inferred from category alone; it also depends on effect, ide
 Customer-facing errors never expose secrets, auth headers, internal stack traces, or private-network details.
 
 `INDETERMINATE` is a first-class terminal outcome, not FAILED.
+
+
+## Public correlation identifier
+
+Public runtime errors return `execution_ref`, backed by `executions.public_execution_ref`.
+
+The internal UUIDv7 Execution primary key is not returned merely for correlation. UUIDv7 is time-ordered and can reveal approximate creation time.
+
+Authenticated internal/customer operations APIs may use internal IDs according to authorization policy.
