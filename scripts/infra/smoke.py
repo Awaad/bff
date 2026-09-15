@@ -55,8 +55,7 @@ def require_docker() -> None:
     result = _run(["docker", "compose", "version"], check=False)
     if result.returncode != 0:
         raise SmokeFailure(
-            "Docker Compose v2 is unavailable: "
-            f"{(result.stderr or result.stdout).strip()}",
+            f"Docker Compose v2 is unavailable: {(result.stderr or result.stdout).strip()}",
         )
 
 
@@ -64,8 +63,7 @@ def validate_compose() -> None:
     result = _compose("config", "--quiet", check=False)
     if result.returncode != 0:
         raise SmokeFailure(
-            "docker compose config validation failed: "
-            f"{(result.stderr or result.stdout).strip()}",
+            f"docker compose config validation failed: {(result.stderr or result.stdout).strip()}",
         )
 
 

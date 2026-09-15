@@ -1,4 +1,5 @@
 from __future__ import annotations
+from uuid import UUID
 
 import psycopg
 import pytest
@@ -205,7 +206,7 @@ def test_public_binding_can_receive_public_identifier(
         """,
     ).fetchone()
 
-    assert row == (IDS["binding_public"],)
+    assert row == (UUID(IDS["binding_public"]),)
 
 
 def test_sync_run_rejects_revision_without_binding_id(

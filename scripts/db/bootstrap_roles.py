@@ -10,14 +10,7 @@ from sqlalchemy import create_engine
 from bff_control.core.settings import get_database_settings
 
 ROOT = Path(__file__).resolve().parents[2]
-ROLES_SQL = (
-    ROOT
-    / "apps"
-    / "control-api"
-    / "migrations"
-    / "sql"
-    / "0001_database_roles_v2_1.sql"
-)
+ROLES_SQL = ROOT / "apps" / "control-api" / "migrations" / "sql" / "0001_database_roles_v2_1.sql"
 
 
 def main() -> int:

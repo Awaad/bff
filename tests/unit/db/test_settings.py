@@ -5,9 +5,7 @@ from bff_control.core.settings import DatabaseSettings
 from pydantic import SecretStr, ValidationError
 
 VALID_DATABASE_URL = "postgresql+asyncpg://user:secret@localhost:5432/bff"
-VALID_MIGRATION_DATABASE_URL = (
-    "postgresql+psycopg://user:secret@localhost:5432/bff"
-)
+VALID_MIGRATION_DATABASE_URL = "postgresql+psycopg://user:secret@localhost:5432/bff"
 
 
 def make_settings(
@@ -58,12 +56,8 @@ def test_database_urls_reject_wrong_driver(
 
 def test_database_settings_repr_redacts_passwords() -> None:
     settings = make_settings(
-        database_url=(
-            "postgresql+asyncpg://user:super-secret@localhost/bff"
-        ),
-        migration_database_url=(
-            "postgresql+psycopg://user:other-secret@localhost/bff"
-        ),
+        database_url=("postgresql+asyncpg://user:super-secret@localhost/bff"),
+        migration_database_url=("postgresql+psycopg://user:other-secret@localhost/bff"),
     )
 
     representation = repr(settings)

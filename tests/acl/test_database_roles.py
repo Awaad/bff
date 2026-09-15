@@ -3,7 +3,7 @@ from __future__ import annotations
 import psycopg
 import pytest
 
-from tests.support.database import DatabaseTestEnvironment, IDS
+from tests.support.database import IDS, DatabaseTestEnvironment
 
 
 def test_role_bootstrap_grants_complete_expected_surface(

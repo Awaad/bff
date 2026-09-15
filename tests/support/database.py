@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import secrets
-from collections.abc import Iterator
+from collections.abc import Iterator, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,20 +12,12 @@ from pathlib import Path
 import psycopg
 from alembic import command
 from alembic.config import Config
+from bff_control.core.settings import get_database_settings
 from psycopg import Connection, sql
 from sqlalchemy import URL, make_url
 
-from bff_control.core.settings import get_database_settings
-
 ROOT = Path(__file__).resolve().parents[2]
-ROLES_SQL = (
-    ROOT
-    / "apps"
-    / "control-api"
-    / "migrations"
-    / "sql"
-    / "0001_database_roles_v2_1.sql"
-)
+ROLES_SQL = ROOT / "apps" / "control-api" / "migrations" / "sql" / "0001_database_roles_v2_1.sql"
 
 GROUP_ROLES = {
     "control": "bff_control_writer",
@@ -69,7 +61,7 @@ class DatabaseTestEnvironment:
     def role_connection(
         self,
         role: str,
-    ) -> Iterator[Connection[tuple[object, ...]]]:
+    ) -> Generator[Connection[tuple[object, ...]]]:
         try:
             role_url = self.login_urls[role]
         except KeyError as error:
@@ -148,22 +140,38 @@ def _create_login_principals(
     login_urls: dict[str, URL] = {}
     role_names: list[str] = []
 
-    with psycopg.connect(_postgres_dsn(admin_url), autocommit=True) as connection:
+    with psycopg.connect(
+        _postgres_dsn(admin_url),
+        autocommit=True,
+    ) as connection:
         for logical_name, group_role in GROUP_ROLES.items():
             login_role = f"bff_test_{logical_name}_{suffix}"
             password = secrets.token_urlsafe(24)
 
-            connection.execute(
-                sql.SQL("CREATE ROLE {} LOGIN INHERIT PASSWORD %s").format(
-                    sql.Identifier(login_role),
-                ),
-                (password,),
+            create_role = sql.SQL(
+                "CREATE ROLE {} LOGIN INHERIT PASSWORD {}"
+            ).format(
+                sql.Identifier(login_role),
+                sql.Literal(password),
             )
+
+            # CREATE ROLE does not accept a protocol bind parameter for
+            # PASSWORD. Render the safely composed statement explicitly.
+            rendered_create_role = create_role.as_string(connection)
+
+            if "$1" in rendered_create_role or "%s" in rendered_create_role:
+                raise RuntimeError(
+                    "temporary LOGIN role SQL unexpectedly contains "
+                    "a bind placeholder"
+                )
+
+            connection.execute(rendered_create_role)
+
             connection.execute(
                 sql.SQL("GRANT {} TO {}").format(
                     sql.Identifier(group_role),
                     sql.Identifier(login_role),
-                ),
+                )
             )
 
             login_urls[logical_name] = database_url.set(
@@ -173,7 +181,6 @@ def _create_login_principals(
             role_names.append(login_role)
 
     return login_urls, role_names
-
 
 def _drop_database_and_logins(
     admin_url: URL,
