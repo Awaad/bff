@@ -51,6 +51,7 @@ indent-style = "space"
 line-ending = "lf"
 
 [tool.mypy]
+plugins = ["pydantic.mypy"]
 python_version = "3.13"
 strict = true
 warn_unreachable = true
