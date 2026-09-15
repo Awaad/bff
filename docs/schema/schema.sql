@@ -1,6 +1,7 @@
 -- Backend for Framer
--- Canonical PostgreSQL baseline schema
+-- Canonical PostgreSQL baseline schema — V2
 -- Date: 2026-09-13
+-- Supersedes: Baseline V1 integrity review
 --
 -- IDs are application-generated UUIDv7. No database UUIDv7 function is assumed.
 -- Lifecycle/status columns use TEXT + CHECK intentionally for rolling migration flexibility.
@@ -103,11 +104,23 @@ CREATE TABLE framer_project_links (
     project_id uuid NOT NULL,
     framer_authorization_id uuid NOT NULL,
     framer_project_id text NOT NULL,
-    status text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','DISCONNECTED')),
-    linked_at timestamptz NOT NULL DEFAULT now(),
+    status text NOT NULL DEFAULT 'PENDING_VERIFICATION'
+        CHECK (status IN ('PENDING_VERIFICATION','ACTIVE','DISCONNECTED','VERIFICATION_FAILED')),
+    ownership_verified_at timestamptz,
+    ownership_verification_method text,
+    ownership_verification_subject text,
+    linked_at timestamptz,
     disconnected_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
     FOREIGN KEY (workspace_id, project_id) REFERENCES projects(workspace_id, id) ON DELETE RESTRICT,
     FOREIGN KEY (workspace_id, framer_authorization_id) REFERENCES framer_authorizations(workspace_id, id) ON DELETE RESTRICT,
+    CHECK (
+        status <> 'ACTIVE'
+        OR (
+            ownership_verified_at IS NOT NULL
+            AND ownership_verification_method IS NOT NULL
+        )
+    ),
     UNIQUE (workspace_id, id)
 );
 CREATE UNIQUE INDEX uq_framer_project_links_active_project
@@ -260,11 +273,22 @@ CREATE TABLE connections (
     name text NOT NULL,
     provider_key text NOT NULL,
     access_mode text NOT NULL DEFAULT 'WORKSPACE' CHECK (access_mode IN ('WORKSPACE','SELECTED_PROJECTS')),
-    status text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','DISABLED','ARCHIVED')),
+    status text NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','ACTIVE','DISABLED','ARCHIVED')),
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     archived_at timestamptz,
     UNIQUE (workspace_id, id)
+);
+
+
+CREATE TABLE connection_drafts (
+    connection_id uuid PRIMARY KEY,
+    workspace_id uuid NOT NULL,
+    draft_json jsonb NOT NULL,
+    updated_by_user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    FOREIGN KEY (workspace_id, connection_id)
+        REFERENCES connections(workspace_id, id) ON DELETE CASCADE
 );
 
 CREATE TABLE connection_revisions (
@@ -386,13 +410,25 @@ CREATE TABLE operations (
     workspace_id uuid NOT NULL,
     connection_id uuid NOT NULL,
     name text NOT NULL,
-    status text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','DISABLED','ARCHIVED')),
+    status text NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','ACTIVE','DISABLED','ARCHIVED')),
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     archived_at timestamptz,
     FOREIGN KEY (workspace_id, connection_id) REFERENCES connections(workspace_id, id) ON DELETE RESTRICT,
     UNIQUE (workspace_id, connection_id, id),
     UNIQUE (workspace_id, id)
+);
+
+
+CREATE TABLE operation_drafts (
+    operation_id uuid PRIMARY KEY,
+    workspace_id uuid NOT NULL,
+    connection_id uuid NOT NULL,
+    draft_json jsonb NOT NULL,
+    updated_by_user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    FOREIGN KEY (workspace_id, connection_id, operation_id)
+        REFERENCES operations(workspace_id, connection_id, id) ON DELETE CASCADE
 );
 
 CREATE TABLE operation_versions (
@@ -435,7 +471,20 @@ CREATE TABLE bindings (
     archived_at timestamptz,
     FOREIGN KEY (workspace_id, project_id) REFERENCES projects(workspace_id, id) ON DELETE RESTRICT,
     UNIQUE (workspace_id, project_id, id),
+    UNIQUE (workspace_id, project_id, id, exposure_mode),
     UNIQUE (workspace_id, id)
+);
+
+
+CREATE TABLE binding_drafts (
+    binding_id uuid PRIMARY KEY,
+    workspace_id uuid NOT NULL,
+    project_id uuid NOT NULL,
+    draft_json jsonb NOT NULL,
+    updated_by_user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    FOREIGN KEY (workspace_id, project_id, binding_id)
+        REFERENCES bindings(workspace_id, project_id, id) ON DELETE CASCADE
 );
 
 CREATE TABLE binding_revisions (
@@ -471,6 +520,18 @@ CREATE TABLE binding_revisions (
         REFERENCES credential_revisions(workspace_id, connection_id, credential_id, id) ON DELETE RESTRICT,
     UNIQUE (binding_id, revision_number),
     UNIQUE (workspace_id, project_id, binding_id, id),
+    UNIQUE (
+        workspace_id,
+        project_id,
+        binding_id,
+        id,
+        connection_id,
+        connection_revision_id,
+        operation_id,
+        operation_version_id,
+        credential_id,
+        credential_revision_id
+    ),
     UNIQUE (workspace_id, binding_id, id),
     UNIQUE (workspace_id, id)
 );
@@ -486,11 +547,13 @@ CREATE TABLE binding_public_identifiers (
     workspace_id uuid NOT NULL,
     project_id uuid NOT NULL,
     binding_id uuid NOT NULL,
+    binding_exposure_mode text NOT NULL DEFAULT 'PUBLIC'
+        CHECK (binding_exposure_mode = 'PUBLIC'),
     public_id text NOT NULL,
     activated_at timestamptz NOT NULL DEFAULT now(),
     revoked_at timestamptz,
-    FOREIGN KEY (workspace_id, project_id, binding_id)
-        REFERENCES bindings(workspace_id, project_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, project_id, binding_id, binding_exposure_mode)
+        REFERENCES bindings(workspace_id, project_id, id, exposure_mode) ON DELETE RESTRICT,
     UNIQUE (public_id),
     UNIQUE (workspace_id, id)
 );
@@ -503,16 +566,18 @@ CREATE UNIQUE INDEX uq_binding_public_identifiers_active
 
 CREATE TABLE executions (
     id uuid PRIMARY KEY,
+    public_execution_ref text NOT NULL,
     workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE RESTRICT,
     project_id uuid NOT NULL,
+    lineage_mode text NOT NULL CHECK (lineage_mode IN ('BINDING','DIRECT')),
     binding_id uuid,
     binding_revision_id uuid,
-    operation_id uuid,
-    operation_version_id uuid,
-    connection_id uuid,
-    connection_revision_id uuid,
-    credential_id uuid,
-    credential_revision_id uuid,
+    operation_id uuid NOT NULL,
+    operation_version_id uuid NOT NULL,
+    connection_id uuid NOT NULL,
+    connection_revision_id uuid NOT NULL,
+    credential_id uuid NOT NULL,
+    credential_revision_id uuid NOT NULL,
     source text NOT NULL CHECK (source IN ('QUERY','ACTION','JOB','WEBHOOK','SYNC','MANUAL_TEST','MANUAL_REPLAY','INTERNAL')),
     status text NOT NULL CHECK (status IN ('PENDING','RUNNING','SUCCEEDED','REJECTED','FAILED','INDETERMINATE','CANCELLED','DEAD_LETTERED')),
     replay_of_execution_id uuid REFERENCES executions(id) ON DELETE RESTRICT,
@@ -532,16 +597,45 @@ CREATE TABLE executions (
     created_at timestamptz NOT NULL DEFAULT now(),
     started_at timestamptz,
     completed_at timestamptz,
+    CHECK (
+        (lineage_mode = 'BINDING' AND binding_id IS NOT NULL AND binding_revision_id IS NOT NULL)
+        OR
+        (lineage_mode = 'DIRECT' AND binding_id IS NULL AND binding_revision_id IS NULL)
+    ),
     FOREIGN KEY (workspace_id, project_id) REFERENCES projects(workspace_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, binding_id) REFERENCES bindings(workspace_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, binding_id, binding_revision_id)
-        REFERENCES binding_revisions(workspace_id, binding_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, operation_id, operation_version_id)
-        REFERENCES operation_versions(workspace_id, operation_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, project_id, binding_id)
+        REFERENCES bindings(workspace_id, project_id, id) ON DELETE RESTRICT,
     FOREIGN KEY (workspace_id, connection_id, connection_revision_id)
         REFERENCES connection_revisions(workspace_id, connection_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, credential_id, credential_revision_id)
-        REFERENCES credential_revisions(workspace_id, credential_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, connection_id, operation_id, operation_version_id)
+        REFERENCES operation_versions(workspace_id, connection_id, operation_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, connection_id, credential_id, credential_revision_id)
+        REFERENCES credential_revisions(workspace_id, connection_id, credential_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (
+        workspace_id,
+        project_id,
+        binding_id,
+        binding_revision_id,
+        connection_id,
+        connection_revision_id,
+        operation_id,
+        operation_version_id,
+        credential_id,
+        credential_revision_id
+    )
+        REFERENCES binding_revisions(
+            workspace_id,
+            project_id,
+            binding_id,
+            id,
+            connection_id,
+            connection_revision_id,
+            operation_id,
+            operation_version_id,
+            credential_id,
+            credential_revision_id
+        ) ON DELETE RESTRICT,
+    UNIQUE (public_execution_ref),
     UNIQUE (workspace_id, id)
 );
 
@@ -720,7 +814,7 @@ CREATE TABLE job_definitions (
     workspace_id uuid NOT NULL,
     project_id uuid NOT NULL,
     name text NOT NULL,
-    status text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','PAUSED','ARCHIVED')),
+    status text NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','ACTIVE','PAUSED','ARCHIVED')),
     active_revision_id uuid,
     next_due_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -729,6 +823,18 @@ CREATE TABLE job_definitions (
     FOREIGN KEY (workspace_id, project_id) REFERENCES projects(workspace_id, id) ON DELETE RESTRICT,
     UNIQUE (workspace_id, project_id, id),
     UNIQUE (workspace_id, id)
+);
+
+
+CREATE TABLE job_drafts (
+    job_definition_id uuid PRIMARY KEY,
+    workspace_id uuid NOT NULL,
+    project_id uuid NOT NULL,
+    draft_json jsonb NOT NULL,
+    updated_by_user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    FOREIGN KEY (workspace_id, project_id, job_definition_id)
+        REFERENCES job_definitions(workspace_id, project_id, id) ON DELETE CASCADE
 );
 
 CREATE TABLE job_revisions (
@@ -752,8 +858,10 @@ CREATE TABLE job_revisions (
     created_at timestamptz NOT NULL DEFAULT now(),
     FOREIGN KEY (workspace_id, project_id, job_definition_id)
         REFERENCES job_definitions(workspace_id, project_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, binding_id) REFERENCES bindings(workspace_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, sync_definition_id) REFERENCES sync_definitions(workspace_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, project_id, binding_id)
+        REFERENCES bindings(workspace_id, project_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, project_id, sync_definition_id)
+        REFERENCES sync_definitions(workspace_id, project_id, id) ON DELETE RESTRICT,
     CHECK ((binding_id IS NOT NULL)::integer + (sync_definition_id IS NOT NULL)::integer = 1),
     CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at > starts_at),
     UNIQUE (job_definition_id, revision_number),
@@ -789,10 +897,10 @@ CREATE TABLE job_runs (
         REFERENCES job_definitions(workspace_id, project_id, id) ON DELETE RESTRICT,
     FOREIGN KEY (workspace_id, job_definition_id, job_revision_id)
         REFERENCES job_revisions(workspace_id, job_definition_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, binding_id, binding_revision_id)
-        REFERENCES binding_revisions(workspace_id, binding_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, sync_definition_id, sync_revision_id)
-        REFERENCES sync_revisions(workspace_id, sync_definition_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, project_id, binding_id, binding_revision_id)
+        REFERENCES binding_revisions(workspace_id, project_id, binding_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, project_id, sync_definition_id, sync_revision_id)
+        REFERENCES sync_revisions(workspace_id, project_id, sync_definition_id, id) ON DELETE RESTRICT,
     CHECK (
         (binding_id IS NOT NULL AND binding_revision_id IS NOT NULL AND sync_definition_id IS NULL AND sync_revision_id IS NULL)
         OR
@@ -821,6 +929,18 @@ CREATE TABLE webhook_endpoints (
     UNIQUE (workspace_id, id)
 );
 
+
+CREATE TABLE webhook_endpoint_drafts (
+    webhook_endpoint_id uuid PRIMARY KEY,
+    workspace_id uuid NOT NULL,
+    project_id uuid NOT NULL,
+    draft_json jsonb NOT NULL,
+    updated_by_user_id uuid REFERENCES users(id) ON DELETE RESTRICT,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    FOREIGN KEY (workspace_id, project_id, webhook_endpoint_id)
+        REFERENCES webhook_endpoints(workspace_id, project_id, id) ON DELETE CASCADE
+);
+
 CREATE TABLE webhook_endpoint_revisions (
     id uuid PRIMARY KEY,
     workspace_id uuid NOT NULL,
@@ -841,7 +961,8 @@ CREATE TABLE webhook_endpoint_revisions (
     created_at timestamptz NOT NULL DEFAULT now(),
     FOREIGN KEY (workspace_id, project_id, webhook_endpoint_id)
         REFERENCES webhook_endpoints(workspace_id, project_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, binding_id) REFERENCES bindings(workspace_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, project_id, binding_id)
+        REFERENCES bindings(workspace_id, project_id, id) ON DELETE RESTRICT,
     UNIQUE (webhook_endpoint_id, revision_number),
     UNIQUE (workspace_id, project_id, webhook_endpoint_id, id),
     UNIQUE (workspace_id, webhook_endpoint_id, id),
@@ -904,7 +1025,8 @@ CREATE TABLE webhook_deliveries (
     payload_hash bytea NOT NULL,
     payload_size bigint NOT NULL CHECK (payload_size >= 0),
     content_type text,
-    payload_ref text NOT NULL,
+    payload_ref text,
+    payload_purged_at timestamptz,
     binding_id uuid NOT NULL,
     binding_revision_id uuid NOT NULL,
     status text NOT NULL CHECK (status IN ('ACCEPTED','PROCESSING','SUCCEEDED','FAILED','IGNORED','DEAD_LETTERED')),
@@ -914,12 +1036,13 @@ CREATE TABLE webhook_deliveries (
     accepted_at timestamptz NOT NULL DEFAULT now(),
     processed_at timestamptz,
     last_error_code text,
+    CHECK (payload_ref IS NOT NULL OR payload_purged_at IS NOT NULL),
     FOREIGN KEY (workspace_id, project_id, webhook_endpoint_id)
         REFERENCES webhook_endpoints(workspace_id, project_id, id) ON DELETE RESTRICT,
     FOREIGN KEY (workspace_id, webhook_endpoint_id, webhook_endpoint_revision_id)
         REFERENCES webhook_endpoint_revisions(workspace_id, webhook_endpoint_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, binding_id, binding_revision_id)
-        REFERENCES binding_revisions(workspace_id, binding_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, project_id, binding_id, binding_revision_id)
+        REFERENCES binding_revisions(workspace_id, project_id, binding_id, id) ON DELETE RESTRICT,
     UNIQUE (workspace_id, id)
 );
 CREATE UNIQUE INDEX uq_webhook_deliveries_provider_event
@@ -962,10 +1085,20 @@ CREATE TABLE sync_runs (
     FOREIGN KEY (workspace_id, sync_definition_id, sync_revision_id)
         REFERENCES sync_revisions(workspace_id, sync_definition_id, id) ON DELETE RESTRICT,
     FOREIGN KEY (workspace_id, job_run_id) REFERENCES job_runs(workspace_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, source_binding_id, source_binding_revision_id)
-        REFERENCES binding_revisions(workspace_id, binding_id, id) ON DELETE RESTRICT,
-    FOREIGN KEY (workspace_id, target_binding_id, target_binding_revision_id)
-        REFERENCES binding_revisions(workspace_id, binding_id, id) ON DELETE RESTRICT,
+    CHECK (
+        (source_binding_id IS NULL AND source_binding_revision_id IS NULL)
+        OR
+        (source_binding_id IS NOT NULL AND source_binding_revision_id IS NOT NULL)
+    ),
+    CHECK (
+        (target_binding_id IS NULL AND target_binding_revision_id IS NULL)
+        OR
+        (target_binding_id IS NOT NULL AND target_binding_revision_id IS NOT NULL)
+    ),
+    FOREIGN KEY (workspace_id, project_id, source_binding_id, source_binding_revision_id)
+        REFERENCES binding_revisions(workspace_id, project_id, binding_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (workspace_id, project_id, target_binding_id, target_binding_revision_id)
+        REFERENCES binding_revisions(workspace_id, project_id, binding_id, id) ON DELETE RESTRICT,
     UNIQUE (workspace_id, id)
 );
 CREATE UNIQUE INDEX uq_sync_runs_one_active
@@ -1206,6 +1339,7 @@ CREATE INDEX idx_executions_binding_created ON executions(binding_id, created_at
 CREATE INDEX idx_executions_status_created ON executions(status, created_at);
 CREATE INDEX idx_executions_trace_id ON executions(trace_id) WHERE trace_id IS NOT NULL;
 CREATE INDEX idx_execution_attempts_execution ON execution_attempts(execution_id, attempt_number);
+CREATE INDEX idx_idempotency_records_expires ON idempotency_records(expires_at);
 
 CREATE INDEX idx_job_definitions_due ON job_definitions(status, next_due_at) WHERE status = 'ACTIVE';
 CREATE INDEX idx_job_runs_workspace_created ON job_runs(workspace_id, created_at DESC);
@@ -1225,8 +1359,13 @@ CREATE INDEX idx_outbox_dispatch ON outbox_events(status, available_at, created_
     WHERE status IN ('PENDING','PROCESSING','FAILED');
 CREATE INDEX idx_outbox_lease_expiry ON outbox_events(lease_expires_at)
     WHERE status = 'PROCESSING';
+CREATE INDEX idx_outbox_published_purge ON outbox_events(published_at)
+    WHERE status = 'PUBLISHED';
+CREATE INDEX idx_consumer_deduplication_processed ON consumer_deduplication(processed_at);
 
 CREATE INDEX idx_notifications_workspace_created ON notifications(workspace_id, created_at DESC);
+CREATE INDEX idx_notifications_expires ON notifications(expires_at)
+    WHERE expires_at IS NOT NULL AND status NOT IN ('DELIVERED','FAILED','EXPIRED');
 CREATE INDEX idx_notification_deliveries_status_created ON notification_deliveries(status, created_at);
 
 CREATE INDEX idx_usage_events_workspace_occurred ON usage_events(workspace_id, occurred_at DESC);
@@ -1247,14 +1386,14 @@ COMMIT;
 -- Rules intentionally enforced in domain services rather than pure DDL
 -- -----------------------------------------------------------------------------
 -- 1. ACTIVE Workspace must retain >= 1 active OWNER.
--- 2. Binding PUBLIC/INTERNAL semantics: only PUBLIC Binding may own active public ID.
+-- 2. Binding PUBLIC/INTERNAL public-identifier ownership is DB-enforced in V2.
 -- 3. QUERY Binding cannot publish a WRITE OperationVersion.
 -- 4. Binding publication validates Project -> Connection access and all JSON contracts.
 -- 5. Lifecycle/admission checks override cached immutable artifacts.
--- 6. Immutable revision/history rows are application-write-once.
+-- 6. Immutable revision/history write protection is reinforced by database roles in docs/security/database-roles.sql.
 -- 7. Job target columns in JobRun must match its JobRevision target; scheduler service enforces this.
 -- 8. Webhook verification/dedupe acceptance happens before Delivery persistence/ACK.
 -- 9. Sync adapter capabilities, schema compatibility, mark-and-sweep and destructive guards are runtime/domain invariants.
 -- 10. Notification REQUIRED preference semantics and provider state monotonicity are domain invariants.
 -- 11. Audit payload redaction is mandatory before INSERT.
--- 12. Exact retention/partitioning is deferred until production volume/policy is known.
+-- 12. Exact retention/partitioning durations are deferred; V2 includes sweep indexes for known retention keys.

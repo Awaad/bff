@@ -1,182 +1,155 @@
-# Canonical Cross-Aggregate Invariants
+# Canonical Cross-Aggregate Invariants — Schema Baseline V2
 
-**Status:** Baseline schema contract  
-**Date:** 2026-09-13  
-**Companion:** `aggregate-design.md`, `schema.sql`, `migration-policy.md`
+**Status:** Frozen baseline contract  
+**Date:** 2026-09-13
 
-This file is the canonical cross-domain integrity contract for the first implementation. Rules are classified as **DB** when the baseline schema enforces them directly, **TX** when they require transactional domain-service logic, and **APP** when they require application/runtime validation.
+Classification:
 
-## 1. Tenant and identity boundary
+- **DB** — enforced directly by schema constraints/indexes.
+- **DB-ACL** — enforced by PostgreSQL privileges from `security/database-roles.sql`; deployment must apply those roles.
+- **TX** — enforced by a named transactional domain-service operation.
+- **APP** — enforced by validation/runtime policy and covered by tests.
 
-1. **DB** Workspace is the tenant ownership boundary. Important tenant resources carry `workspace_id` explicitly.
-2. **DB** Cross-workspace composite references are rejected wherever practical through `(workspace_id, id)` unique keys and composite foreign keys.
-3. **APP/TX** `workspace_id` on owned resources is immutable in ordinary operation. Transfers are explicit workflows.
-4. **DB** Primary IDs are UUIDs generated as UUIDv7 by application/shared ID infrastructure; the DB does not depend on a provider-specific UUIDv7 function.
-5. **DB** Public runtime identifiers are separate from primary keys and have independent activation/revocation history.
-6. **TX** An ACTIVE Workspace must retain at least one active OWNER membership. This multi-row invariant is enforced by the Workspace domain under row lock, not a simple CHECK.
+## 1. Tenant and identity
+
+1. **DB** Workspace is the tenant boundary; important tenant resources carry `workspace_id`.
+2. **DB** Tenant-aware composite FKs prevent cross-workspace references wherever practical.
+3. **TX** Owned-resource `workspace_id` is immutable in ordinary operation; transfers use explicit workflows.
+4. **APP** Primary UUIDs are application-generated UUIDv7. PostgreSQL validates UUID type only; it does not prove UUIDv7 generation.
+5. **DB** Public Binding/Webhook identifiers are separate from internal PKs and have independent activation/revocation history.
+6. **TX** ACTIVE Workspace retains at least one active OWNER.
 7. **DB** At most one active Membership period exists per `(workspace_id, user_id)`.
 
-## 2. Project and Framer linkage
+## 2. Project and Framer linking
 
 1. **DB** Project belongs to one Workspace.
-2. **DB** At most one active FramerProjectLink exists per Project.
-3. **DB** One external Framer project may have at most one active Backend-for-Framer Project link globally.
-4. **APP/TX** Project suspension/archive rejects new runtime admission but does not rewrite historical Executions/Runs.
-5. **APP** Framer authorization lifecycle is independent from Project lifecycle.
+2. **DB** At most one ACTIVE FramerProjectLink exists per Project.
+3. **DB** One verified ACTIVE external Framer project ID may be linked only once globally.
+4. **APP/TX** A FramerProjectLink cannot become ACTIVE until backend verification proves the supplied Framer authorization/session can access the exact claimed Framer project.
+5. **DB** ACTIVE FramerProjectLink requires verification metadata.
+6. **APP/TX** Project suspension/archive rejects new work without rewriting history.
 
-## 3. Connection access and executable composition
+## 3. Immutable revision model and drafts
 
-1. **DB** Connection belongs to one Workspace and may be shared by Projects in that Workspace.
-2. **DB** `SELECTED_PROJECTS` access is represented by `connection_project_access`; every referenced Project is in the same Workspace.
-3. **APP** `WORKSPACE` access does not require explicit access rows; `SELECTED_PROJECTS` does.
-4. **DB** ConnectionRevision, Credential, CredentialRevision, CredentialSecretVersion, Operation and OperationVersion cannot cross Connection/Workspace ownership.
-5. **APP/TX** Connection, Credential and Operation lifecycle kill switches override cached immutable Binding configuration at runtime.
-6. **APP** Native provider adapters cannot bypass central transport/security controls.
+1. **DB** Revision/version rows belong to their stable parent and have unique revision/version numbers.
+2. **DB-ACL** Published ConnectionRevision, CredentialRevision, OperationVersion, BindingRevision, SyncRevision, JobRevision, WebhookEndpointRevision, UsageEvent, and AuditEvent are write-once under application roles. CredentialSecretVersion secret material is immutable; only lifecycle/destruction columns are updateable.
+3. **DB** Persistent mutable authoring state is separate: ConnectionDraft, OperationDraft, BindingDraft, SyncDraft, JobDraft, WebhookEndpointDraft. Connection, Operation, Binding, JobDefinition, SyncDefinition, and WebhookEndpoint may exist in DRAFT state before first publication.
+4. **APP/TX** Publication validates/compiles draft state into a new immutable revision and atomically advances the parent's active/current pointer.
 
-## 4. Credential and secret integrity
+## 4. Connection/Credential/Operation composition
 
-1. **DB** Credential is stable identity; CredentialRevision is immutable auth semantics; CredentialSecretVersion is immutable encrypted material.
-2. **DB/TX** At most one current CredentialRevision pointer and at most one preferred active SecretVersion pointer are maintained on Credential.
-3. **APP** BindingRevision pins Credential + CredentialRevision, never CredentialSecretVersion.
-4. **APP** ExecutionAttempt records the exact CredentialSecretVersion used.
-5. **APP** Plaintext secrets never enter PostgreSQL, RabbitMQ, Valkey, runtime history, logs, traces or audit.
-6. **APP** Revoked/destroyed historical secret versions are never resurrected for replay.
-7. **TX** Secret activation/rotation is concurrency-safe and external validation is performed outside long DB transactions.
+1. **DB** Connection belongs to one Workspace.
+2. **DB** Selected-project Connection access cannot cross Workspace.
+3. **DB** ConnectionRevision, Credential, CredentialRevision, SecretVersion, Operation, and OperationVersion cannot cross their parent Connection/Workspace.
+4. **APP/TX** Connection/Credential/Operation lifecycle kill switches override cached immutable artifacts.
+5. **APP** Provider adapters cannot bypass central network/security controls.
 
-## 5. Operation and Binding
+## 5. Binding
 
-1. **DB** Operation belongs to one Connection and Workspace; OperationVersion belongs to that Operation.
-2. **DB** OperationVersion number is unique per Operation and persisted versions are immutable.
-3. **DB** Binding belongs to one Project and Workspace.
-4. **DB** Binding has independent `kind = QUERY|ACTION` and `exposure_mode = PUBLIC|INTERNAL` dimensions.
-5. **DB** Only PUBLIC Bindings may have BindingPublicIdentifier rows; at most one identifier is active at a time.
-6. **DB** BindingRevision pins one exact OperationVersion, ConnectionRevision, Credential and CredentialRevision from the same Connection/Workspace graph.
-7. **APP** QUERY may not publish a WRITE OperationVersion.
-8. **APP** Publication compiles/validates the full composition before atomically switching `binding.active_revision_id`.
-9. **APP** Runtime caller input cannot select arbitrary Connection/Credential/host/privileged transport options.
-10. **APP** Each admitted Execution resolves one BindingRevision once and remains pinned to it.
+1. **DB** Binding belongs to one Project/Workspace.
+2. **DB** Binding has independent `kind = QUERY|ACTION` and `exposure_mode = PUBLIC|INTERNAL`.
+3. **DB** BindingPublicIdentifier can reference only a PUBLIC Binding.
+4. **DB** At most one active public identifier exists per Binding.
+5. **DB** BindingRevision pins exact OperationVersion, ConnectionRevision, Credential, and CredentialRevision from one Connection graph.
+6. **APP** QUERY publication cannot target a WRITE OperationVersion.
+7. **APP/TX** Publication validates Project→Connection access, contracts, policies, and compiler compatibility.
+8. **APP** Runtime callers cannot select arbitrary Connection/Credential/host/privileged transport fields.
 
-## 6. Execution and attempts
+## 6. Execution lineage
 
-1. **DB** Execution is one logical invocation; ExecutionAttempt is one concrete attempt.
-2. **DB** `(execution_id, attempt_number)` is unique.
-3. **APP/TX** Automatic retry creates a new Attempt under the same Execution; manual replay creates a new Execution linked by `replay_of_execution_id`.
-4. **APP/TX** Execution terminal states are not silently reopened.
-5. **APP** `INDETERMINATE` is first-class when an unsafe remote side effect may have occurred but cannot be confirmed.
-6. **APP/TX** Lease/fencing protects local state from stale workers but does not imply exactly-once remote side effects.
-7. **APP** Pre-admission garbage/abuse need not create Execution rows; customer-relevant accepted/rejected invocation may.
-8. **DB** Execution stores exact immutable runtime lineage for historical queryability.
-9. **APP** Payload retention is separate from Execution metadata and binary/stream bodies are not stored inline as normal history.
+1. **DB** Every Execution has explicit `lineage_mode = BINDING|DIRECT`.
+2. **DB** BINDING lineage requires both Binding and BindingRevision; DIRECT lineage requires both to be NULL.
+3. **DB** Every Execution always pins exact ConnectionRevision, OperationVersion, Credential, and CredentialRevision.
+4. **DB** BINDING lineage has one composite FK proving that all recorded revision IDs are the exact composition of the cited BindingRevision and Project.
+5. **DB** DIRECT lineage independently proves Connection/Operation/Credential all belong to the same Connection.
+6. **DB** Execution attribution to Binding is Project-aware, not merely Workspace-aware.
+7. **DB** `public_execution_ref` is unique and separate from UUIDv7 PK.
+8. **DB** `(execution_id, attempt_number)` is unique.
+9. **DB-ACL** ExecutionAttempt identity/lineage fields are non-updatable by runtime/worker roles; only lifecycle/result columns are granted UPDATE.
+10. **TX/APP** Automatic retry creates a new Attempt under the same Execution; manual replay creates a new Execution.
+11. **APP** INDETERMINATE is first-class for ambiguous unsafe remote side effects.
 
-## 7. Public Action idempotency
+## 7. Idempotency
 
-1. **DB** Public request identity is unique on `(workspace_id, binding_id, key_hash)`.
-2. **APP** Same key + same canonical request hash returns/reuses the original logical Execution/result.
-3. **APP** Same key + different request hash returns an idempotency conflict and never executes again.
-4. **APP** Publishing a newer BindingRevision does not change the Execution associated with an existing key.
-5. **APP** Internal idempotency does not make an unsafe upstream mutation retryable.
-6. **APP** Idempotency retention exceeds the meaningful client retry/recovery horizon.
+1. **DB** Public Action identity is unique on `(workspace_id, binding_id, key_hash)`.
+2. **APP** Same key + same canonical request reuses the original Execution/result.
+3. **APP** Same key + different request is rejected.
+4. **APP** Publishing a new BindingRevision does not alter an existing idempotency record's Execution.
+5. **APP** Internal idempotency does not make unsafe upstream retries safe.
+6. **DB** `expires_at` is indexed for retention sweeps.
 
-## 8. Jobs and scheduler
+## 8. Jobs
 
-1. **DB** JobDefinition belongs to one Project/Workspace and points to one active immutable JobRevision.
-2. **DB** JobRevision targets exactly one of `binding_id` or `sync_definition_id`.
-3. **DB** `(job_definition_id, scheduled_for)` uniquely identifies one logical scheduled occurrence.
-4. **TX** Scheduler replicas may race; DB uniqueness decides occurrence creation.
-5. **TX** JobRun creation and its OutboxEvent occur in one transaction.
-6. **APP** Misfire policy is explicit and catch-up is bounded.
-7. **APP** Overlap policy is explicit; V1 does not force-cancel previous remote side effects.
-8. **APP** Binding-target JobRun pins the active BindingRevision at occurrence creation.
-9. **APP** Sync-target JobRun creates a SyncRun pinned to the then-current SyncRevision.
-10. **APP** RabbitMQ state is never the source of truth for JobRun status.
+1. **DB** JobRevision targets exactly one Binding or SyncDefinition.
+2. **DB** JobRun target lineage is pair-complete and Project-aware.
+3. **DB** `(job_definition_id, scheduled_for)` uniquely identifies an occurrence.
+4. **TX** Scheduler replicas race safely; DB uniqueness decides occurrence creation.
+5. **TX** JobRun + OutboxEvent commit together.
+6. **APP** Misfire/DST/overlap semantics are explicit and bounded.
 
 ## 9. Webhooks
 
-1. **DB** WebhookEndpoint belongs to one Project/Workspace; WebhookEndpointRevision is immutable.
-2. **DB** At most one active public webhook identifier exists per Endpoint.
-3. **APP** Signature verification uses exact raw request bytes where required.
-4. **APP** Invalid/untrusted ingress does not create normal WebhookDelivery rows.
-5. **TX** Provider ACK is returned only after `WebhookDelivery + OutboxEvent` commit durably.
-6. **DB** Provider event dedupe uses stable Endpoint identity, not EndpointRevision.
-7. **APP** Same provider event ID with same payload hash is a duplicate; same event ID with a different hash is an anomaly.
-8. **APP** Providers lacking event IDs receive best-effort dedupe only; this limitation is explicit.
-9. **APP** Accepted WebhookDelivery pins the selected BindingRevision and later publishes cannot alter it.
-10. **DB/APP** Duplicate broker delivery cannot create a second original Execution for the Delivery; manual replay is a new replay Execution.
-11. **APP** Verification secrets are versioned encrypted inbound secrets, not outbound Credentials.
+1. **DB** Endpoint belongs to one Project/Workspace and revisions are immutable under DB-ACL.
+2. **DB** At most one active public identifier exists per Endpoint.
+3. **APP** Signature verification uses raw bytes and replay-window policy.
+4. **TX** Provider ACK occurs only after verified Delivery + Outbox commit.
+5. **DB** Provider event dedupe is scoped to stable Endpoint.
+6. **APP** Same provider event ID with different payload hash is an anomaly.
+7. **DB** Accepted Delivery pins exact BindingRevision.
+8. **DB** `payload_ref` may become NULL only when `payload_purged_at` records deliberate purge.
+9. **APP** Invalid ingress does not create ordinary Delivery rows.
 
-## 10. Provider-neutral Sync
+## 10. Sync
 
-1. **DB/APP** SyncDefinition is stable identity; SyncRevision is immutable configuration; SyncDraft is mutable authoring state.
-2. **APP** Sync core is provider-neutral. Framer-specific collection/field/publish semantics live in adapter config/capabilities.
-3. **APP** Every SyncRevision requires stable source identity; row/array position is not a valid normal identity.
-4. **DB** `(sync_definition_id, source_identity_hash)` uniquely identifies a SyncMapping.
-5. **DB** Target identity is unique within a SyncDefinition when the adapter declares exclusive identity semantics.
-6. **APP** FULL/INCREMENTAL scan mode is independent from DRY_RUN/APPLY execution mode.
-7. **APP** Incremental absence never means deletion.
-8. **APP** Absence-based delete/soft-delete occurs only after a completed authoritative FULL scan.
-9. **APP** Failed/partial FULL scan performs no absence sweep.
-10. **APP** Large unexpected destructive deltas enter `REQUIRES_CONFIRMATION` before mutation.
-11. **TX** Incremental checkpoint advances only after corresponding processing is durable.
-12. **APP/TX** V1 allows at most one active SyncRun per SyncDefinition.
-13. **APP** SyncRun pins the exact SyncRevision and relevant BindingRevision(s).
-14. **APP** Item mutation follows the same upstream idempotency / `INDETERMINATE` rules as Actions.
-15. **APP** Scheduled Sync reuses JobDefinition/JobRun; there is no second scheduler.
-16. **APP** Sync success and target publish/deploy outcome are distinct.
+1. **DB** SyncDefinition/SyncRevision/SyncDraft are separate stable/published/draft state.
+2. **APP** Core is provider-neutral; provider capabilities remain adapter-specific.
+3. **DB** `(sync_definition_id, source_identity_hash)` is unique.
+4. **APP** Target identity uniqueness is enforced only for adapters declaring exclusive identity.
+5. **DB** Source/target Binding lineage on SyncRun is both-null or both-nonnull and Project-aware.
+6. **APP** Incremental absence never implies deletion.
+7. **APP** Absence sweep requires a completed authoritative FULL scan.
+8. **APP** Destructive deltas can enter REQUIRES_CONFIRMATION.
+9. **DB** At most one active SyncRun exists per SyncDefinition.
 
-## 11. Outbox and consumer dedupe
+## 11. Outbox / consumer dedupe
 
-1. **TX** Business state and OutboxEvent are inserted in the same PostgreSQL transaction.
-2. **APP/TX** Multiple dispatchers may claim rows with lease/locking semantics.
-3. **APP** Publisher confirmation precedes `published_at` marking.
-4. **APP** Publish-after-confirm DB failure may cause duplicate broker delivery; consumers must therefore be idempotent.
-5. **APP** Queue envelopes are small, typed/versioned references and never contain plaintext credentials or arbitrary large payloads.
-6. **APP** Consumer ACK occurs only after durable handling.
-7. **DB** Generic `consumer_deduplication` is used only where a stronger domain-specific unique key is unavailable.
-8. **APP** Broker DLQ is transport state; customer-visible terminal/dead-letter state lives in domain tables.
+1. **DB** OutboxEvent is durable database state.
+2. **TX/APP** Multiple dispatchers claim safely; broker confirm precedes publication mark.
+3. **APP** Duplicate publication is expected after publish-confirm ambiguity; consumers are idempotent.
+4. **APP** Queue envelopes contain references, not secrets/large arbitrary payloads.
+5. **DB** `processed_at` and `published_at` retention paths are indexed.
 
 ## 12. Notifications
 
-1. **DB/APP** Notification is one logical message, NotificationDelivery one channel, DeliveryAttempt one provider attempt.
-2. **DB** Logical creation dedupes on stable `(workspace_id, notification_type, dedupe_key)`.
-3. **APP** Producer domains emit durable facts/outbox events and do not call provider SDKs directly.
-4. **APP** Recipient destination and rendered content/template version are snapshotted for deterministic retries.
-5. **APP** `expires_at` overrides retry/backoff; stale transactional messages are not delivered indefinitely.
-6. **APP** Provider acceptance is not equivalent to confirmed delivery.
-7. **APP** Blind cross-provider failover is forbidden when prior acceptance is indeterminate.
-8. **APP** REQUIRED notification types override ordinary user channel preferences.
-9. **APP** Customer notification data is separate from platform SRE alerting.
+1. **DB** Logical Notification dedupes on `(workspace_id, notification_type, dedupe_key)`.
+2. **APP** V1 persisted channels are EMAIL and IN_APP only; SMS is future capability.
+3. **APP** Producer domains emit durable events rather than calling providers.
+4. **APP** Recipient/template/rendered content is snapshotted for retries.
+5. **APP** Expiration overrides retry.
+6. **DB** `expires_at` has a sweep-oriented partial index.
+7. **APP** Provider accepted != delivered.
 
-## 13. Usage, billing and entitlements
+## 13. Usage/Billing/Entitlements
 
-1. **APP** Billing says what was purchased; Entitlements say what is allowed; Usage says what was consumed.
-2. **DB** Billing/Subscription belongs to Workspace; free Workspace may have no BillingAccount.
-3. **APP** Runtime never branches on marketing plan names or provider subscription status directly.
-4. **DB/APP** Entitlement project scope must belong to the same Workspace.
-5. **DB** UsageEvent is append-only with a stable dedupe key per billable event.
-6. **APP** Logical Execution billing normally meters one logical Execution, not each retry Attempt; byte/cost metrics may meter actual Attempts.
-7. **APP** Valkey counters are enforcement acceleration, not accounting truth.
+1. **APP** Billing, Entitlements, and Usage are separate semantics.
+2. **DB** Billing belongs to Workspace.
+3. **DB-ACL** UsageEvent is append-only under application roles.
+4. **DB** UsageEvent has a stable dedupe key per metric/workspace.
+5. **APP** Logical Execution billing normally meters one Execution, not retries.
+6. **APP** Valkey counters are not accounting truth.
 
 ## 14. Audit
 
-1. **DB/APP** AuditEvent is append-only accountability data, not current business state.
-2. **APP** Material control-plane/security/operator actions are audited; routine high-volume runtime operations are not duplicated into audit.
-3. **DB** TENANT-scope AuditEvent requires `workspace_id`.
-4. **APP** Support/impersonation records the real privileged actor plus effective tenant context.
-5. **APP** Successful material mutations write audit in the same transaction where practical.
-6. **APP** Audit before/after/diff data is sanitized; plaintext secrets/tokens never enter the ledger.
-7. **APP** Corrections are additive events rather than updates to historical rows.
-8. **APP** Audit retention/export policy is independent from Execution payload retention.
+1. **DB** TENANT-scope AuditEvent requires Workspace.
+2. **DB-ACL** AuditEvent is append-only under application roles.
+3. **APP** Material administrative/security/operator actions are audited.
+4. **APP** Support/impersonation retains real privileged actor and effective context.
+5. **TX** Successful material mutation writes AuditEvent in the same transaction where practical.
+6. **APP** Audit payload is sanitized and never contains plaintext secrets.
+7. **APP** Corrections are additive.
 
-## 15. Retention classes
+## 15. Identifier semantics
 
-Retention is intentionally independent by data class:
-
-- immutable authoring revisions: long-lived with owning aggregate history;
-- mappings/current control state: retained while resource exists plus archive policy;
-- Execution/Run metadata: operational retention, potentially partitioned by time;
-- payload bodies: shorter retention and separately purgeable;
-- idempotency/dedupe identities: at least the meaningful retry horizon;
-- AuditEvent: comparatively long-lived;
-- secret ciphertext: may be destroyed while non-secret historical metadata remains.
-
-Exact durations remain a product/legal/entitlement policy decision and are not frozen in the baseline schema.
+1. **APP** UUIDv7 PKs are globally unique and practically unguessable but time-ordered; they may reveal approximate creation time.
+2. **DB** Public runtime identifiers and `public_execution_ref` are separate identifiers.
+3. **APP** Public capability security never depends on secrecy of an internal UUID.

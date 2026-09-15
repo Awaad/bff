@@ -3469,3 +3469,64 @@ Platform-scope events may omit workspace_id.
 28. Audit retention is independent from execution/payload retention.
 29. Tenant audit export is authorization-filtered and does not leak unrelated internal platform data.
 30. AuditEvent is designed to be time-partitionable if scale/retention later requires it.
+
+
+---
+
+# Schema Baseline V2 Hardening Addendum — 2026-09-13
+
+This addendum supersedes earlier exploratory wording where it conflicts with the V2 schema/invariants.
+
+## Persistent authoring drafts
+
+Persistent authoring state is now first-class for:
+
+- ConnectionDraft
+- OperationDraft
+- BindingDraft
+- SyncDraft
+- JobDraft
+- WebhookEndpointDraft
+
+Stable parent identities may exist before publication. Drafts are mutable; published revisions remain write-once.
+
+## Execution lineage modes
+
+Execution explicitly distinguishes:
+
+- `BINDING` — all lineage must exactly match one BindingRevision composition.
+- `DIRECT` — used for manual/authoring Operation tests; Binding fields are absent, but Connection/Operation/Credential lineage is still fully cross-checked.
+
+Execution always pins ConnectionRevision, OperationVersion, Credential, and CredentialRevision.
+
+Public runtime responses use a separate `public_execution_ref`; UUIDv7 PKs remain internal.
+
+## Optional lineage pairs
+
+Optional lineage such as SyncRun source/target Binding uses explicit both-null/both-nonnull CHECKs plus tenant/project-aware composite FKs.
+
+This avoids PostgreSQL `MATCH SIMPLE` partial-NULL bypass while preserving optionality.
+
+## Framer linking proof
+
+A FramerProjectLink starts `PENDING_VERIFICATION`.
+
+It may become ACTIVE only after backend verification proves that the authorization/session can access the exact claimed Framer project. Verification method and timestamp are retained.
+
+## Public Binding identifiers
+
+The database now enforces that BindingPublicIdentifier can reference only a `PUBLIC` Binding.
+
+## Immutable rows
+
+Application database roles reinforce write-once behavior for immutable revisions, UsageEvent, and AuditEvent.
+
+ExecutionAttempt remains lifecycle-mutable only through column-level privileges.
+
+## Payload purge
+
+WebhookDelivery raw payload reference may be purged independently from durable metadata. `payload_purged_at` records intentional purge.
+
+## UUIDv7 wording
+
+UUIDv7 is time-ordered and reveals approximate creation time. It is not treated as a public capability or diagnostic identifier.

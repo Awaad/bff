@@ -141,3 +141,16 @@ Every migration PR answers:
 ## Baseline rule
 
 Before first production deployment, squash exploratory local migrations into a reviewed baseline if convenient. After production data exists, migration history is append-only: do not rewrite already-applied migration files.
+
+
+## Baseline V2 pre-implementation rule
+
+Baseline V2 supersedes V1 before production data exists.
+
+The V1→V2 changes should be folded into the initial `0001` migration if implementation has not yet shipped persistent environments.
+
+Do **not** create fake historical migration churn for a schema that was never deployed.
+
+Once any shared/staging/production environment depends on `0001`, all subsequent changes become additive migrations.
+
+Database role/ACL provisioning in `security/database-roles.sql` is part of environment bootstrap and must be tested alongside migrations.
