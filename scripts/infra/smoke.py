@@ -15,8 +15,8 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = ROOT / "compose.yaml"

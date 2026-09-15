@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from pydantic import SecretStr
-
 from bff_control.core.settings import DatabaseSettings
 from bff_control.infrastructure.db.database import Database
+from pydantic import SecretStr
 
 
 def test_database_engine_uses_asyncpg_driver() -> None:

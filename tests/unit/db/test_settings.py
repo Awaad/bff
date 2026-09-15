@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import SecretStr, ValidationError
-
 from bff_control.core.settings import DatabaseSettings
-
+from pydantic import SecretStr, ValidationError
 
 VALID_DATABASE_URL = "postgresql+asyncpg://user:secret@localhost:5432/bff"
 VALID_MIGRATION_DATABASE_URL = (
