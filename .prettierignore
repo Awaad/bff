@@ -8,3 +8,4 @@ node_modules/
 pnpm-lock.yaml
 uv.lock
 packages/api-contract/src/generated/
+packages/api-contract/tests/snapshots/
