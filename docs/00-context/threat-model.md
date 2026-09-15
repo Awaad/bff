@@ -36,3 +36,16 @@ Customer API credentials, OAuth refresh tokens, signing secrets, tenant configur
 ## Non-claims
 
 CORS is not authentication. RabbitMQ is not exactly-once. Fencing cannot stop duplicate remote side effects. Public IDs are not bearer secrets.
+
+
+## Framer project claim / reservation abuse
+
+Threat: an authenticated tenant submits another customer's `framer_project_id` and attempts to reserve the globally unique active link, causing cross-tenant denial of service.
+
+Controls:
+
+- FramerProjectLink begins PENDING_VERIFICATION.
+- Backend proves the supplied authorization/session has access to the exact claimed project before activation.
+- Global active-project uniqueness is meaningful only after verification succeeds.
+- Verification failures do not reserve the ACTIVE external project identity.
+- E2E security tests attempt arbitrary cross-tenant project claims.
