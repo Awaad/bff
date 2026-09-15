@@ -50,7 +50,6 @@ GRANT SELECT ON
     app.operation_versions,
     app.entitlement_grants,
     app.project_profile_assignments,
-    app.project_capability_profiles,
     app.usage_buckets
 TO bff_runtime_writer;
 
@@ -68,6 +67,11 @@ TO bff_runtime_writer;
 
 -- Initial async worker deployment is broad; split by worker service later.
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA app TO bff_worker_writer;
+
+-- Workers execute asynchronous work; they do not author or publish Bindings.
+-- This revoke must remain after the blanket worker grant so UPDATE is not
+-- accidentally reintroduced by statement ordering.
+REVOKE UPDATE ON app.bindings FROM bff_worker_writer;
 
 -- Write-once published/history state.
 REVOKE UPDATE, DELETE ON
