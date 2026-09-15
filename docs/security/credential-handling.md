@@ -1,43 +1,24 @@
-# Credential Handling
+# Credential Handling — V2.1
 
-Model:
+## Model
 
-```text
-Credential
-├── CredentialRevision
-├── CredentialSecretVersion
-└── OAuthTokenState
-```
+`Credential` is stable auth identity. `CredentialRevision` is immutable auth-application semantics. `CredentialSecretVersion` is immutable secret material with lifecycle metadata.
 
-Credential is stable auth identity. CredentialRevision is immutable auth semantics. CredentialSecretVersion is immutable encrypted material.
+## First-class no-auth scheme
 
-Secrets are write-only after submission.
+Unauthenticated upstreams use a first-class Credential with `auth_scheme = NONE`.
 
-## Envelope encryption
+A NONE Credential:
 
-1. generate random DEK
-2. encrypt secret with authenticated encryption
-3. wrap DEK using external KMS abstraction
-4. persist ciphertext, wrapped DEK, algorithm/version metadata
+- has an immutable CredentialRevision with empty authentication configuration;
+- has no CredentialSecretVersion;
+- injects no authentication headers;
+- requires no KMS access.
 
-Database compromise alone must not reveal plaintext.
+This is intentional rather than a synthetic workaround. Keeping a Credential identity for NONE preserves one uniform non-null BindingRevision/Execution lineage shape and avoids reopening nullable credential-composition semantics.
 
-## Decryption boundary
+The product UI presents it simply as **No authentication**.
 
-Execution plane decrypts only at the last responsible moment. Control plane does not routinely decrypt. Decrypted secrets are never stored in Valkey/distributed cache.
+## Secret handling
 
-## Rotation
-
-Secret versions are immutable and may move through PENDING, ACTIVE, RETIRING, REVOKED, DESTROYED.
-
-Routine rotation does not require Binding republish. ExecutionAttempt records the exact SecretVersion used.
-
-## OAuth
-
-Durable refresh/root secrets are encrypted. Short-lived mutable access-token state may use encrypted OAuthTokenState. Refresh requires concurrency control.
-
-## Redaction
-
-Credential-derived values are automatically registered for redaction across logs, traces, retained payloads, audit, and diagnostics.
-
-No automatic credential fallback.
+Secret material is write-only after submission, envelope encrypted, and decrypted only in the execution context at the last responsible moment. Plaintext secret material must never enter PostgreSQL, RabbitMQ, Valkey, logs, traces, audit, or retained execution payloads.
