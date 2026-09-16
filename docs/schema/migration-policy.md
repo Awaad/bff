@@ -11,7 +11,8 @@ Schema evolution must preserve production availability, immutable historical lin
 
 - PostgreSQL is the authoritative relational store.
 - Control-plane migrations are expected to use Alembic or an equivalent explicit migration framework.
-- `schema.sql` is the canonical baseline/desired schema for a fresh database; it is **not** run wholesale against an existing production database.
+- `schema.sql` is the current desired schema for a fresh database; it is **not** run wholesale against an existing production database.
+- Accepted historical baselines used to verify immutable migrations are retained under `docs/schema/baselines/`.
 - Every production schema change receives a numbered migration and a matching application compatibility plan.
 
 ## Expand / migrate / contract
@@ -157,7 +158,17 @@ Do **not** create fake historical migration churn for a schema that was never de
 
 Once any shared/staging/production environment depends on `0001`, all subsequent changes become additive migrations.
 
+After the first additive migration, the living desired schema intentionally diverges
+from immutable `0001`. The exact V2.1 schema accepted for `0001` is retained under
+`docs/schema/baselines/schema-v2.1.sql` and remains the comparison source for the
+baseline snapshot gate.
+
 Database role/ACL provisioning in `security/database-roles.sql` is part of environment bootstrap and must be tested alongside migrations.
+
+The current deployable role bootstrap is mirrored at
+`apps/control-api/migrations/sql/application_roles.sql`. Historical role SQL such as
+`0001_database_roles_v2_1.sql` is immutable and is verified against its retained
+snapshot under `docs/security/baselines/`.
 
 
 ## Database privilege migrations

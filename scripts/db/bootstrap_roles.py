@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply PostgreSQL application roles and grants for Schema Baseline V2.1."""
+"""Apply the current PostgreSQL application roles and grants."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from bff_control.core.settings import get_database_settings
 from sqlalchemy import create_engine
 
 ROOT = Path(__file__).resolve().parents[2]
-ROLES_SQL = ROOT / "apps" / "control-api" / "migrations" / "sql" / "0001_database_roles_v2_1.sql"
+ROLES_SQL = ROOT / "apps" / "control-api" / "migrations" / "sql" / "application_roles.sql"
 
 
 def main() -> int:

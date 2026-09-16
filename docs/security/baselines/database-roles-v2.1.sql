@@ -1,5 +1,4 @@
--- Backend for Framer — current database application-role policy
--- Current through migration 0002_user_auth_identities.
+-- Backend for Framer — database role hardening (Schema Baseline V2.1)
 -- Run as the same schema/migration owner that creates future objects.
 
 DO $$
@@ -33,14 +32,6 @@ GRANT UPDATE (
     updated_at,
     archived_at
 ) ON app.bindings TO bff_control_writer;
-
--- External authentication subject identity is stable security state.
-REVOKE UPDATE ON app.user_auth_identities FROM bff_control_writer;
-GRANT UPDATE (
-    status,
-    updated_at,
-    disabled_at
-) ON app.user_auth_identities TO bff_control_writer;
 
 -- Runtime admission/config reads.
 GRANT SELECT ON
@@ -81,10 +72,6 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA app TO bff_worker_writer;
 -- This revoke must remain after the blanket worker grant so UPDATE is not
 -- accidentally reintroduced by statement ordering.
 REVOKE UPDATE ON app.bindings FROM bff_worker_writer;
-
--- Authentication identities are control-plane security state.
-REVOKE ALL PRIVILEGES ON app.user_auth_identities
-FROM bff_runtime_writer, bff_worker_writer, bff_retention;
 
 -- Write-once published/history state.
 REVOKE UPDATE, DELETE ON

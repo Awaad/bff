@@ -1,7 +1,6 @@
 -- Backend for Framer
--- Canonical PostgreSQL desired schema
--- Baseline: V2.1 frozen 2026-09-13
--- Current through: 0002_user_auth_identities — 2026-09-16
+-- Canonical PostgreSQL baseline schema — V2
+-- Date: 2026-09-13
 -- Supersedes: Baseline V1 integrity review
 --
 -- IDs are application-generated UUIDv7. No database UUIDv7 function is assumed.
@@ -27,25 +26,6 @@ CREATE TABLE users (
     updated_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (email_normalized)
 );
-
-CREATE TABLE user_auth_identities (
-    id uuid PRIMARY KEY,
-    user_id uuid NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    issuer text NOT NULL CHECK (length(issuer) > 0),
-    subject text NOT NULL CHECK (length(subject) > 0),
-    status text NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','DISABLED')),
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    disabled_at timestamptz,
-    CHECK (
-        (status = 'ACTIVE' AND disabled_at IS NULL)
-        OR (status = 'DISABLED' AND disabled_at IS NOT NULL)
-    ),
-    UNIQUE (issuer, subject)
-);
-
-CREATE INDEX ix_user_auth_identities_user_id
-    ON user_auth_identities(user_id);
 
 CREATE TABLE workspaces (
     id uuid PRIMARY KEY,
