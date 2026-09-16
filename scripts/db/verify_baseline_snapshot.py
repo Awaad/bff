@@ -17,9 +17,7 @@ MIGRATION_ROLES = (
     ROOT / "apps" / "control-api" / "migrations" / "sql" / "0001_database_roles_v2_1.sql"
 )
 CURRENT_ROLES = ROOT / "docs" / "security" / "database-roles.sql"
-APPLICATION_ROLES = (
-    ROOT / "apps" / "control-api" / "migrations" / "sql" / "application_roles.sql"
-)
+APPLICATION_ROLES = ROOT / "apps" / "control-api" / "migrations" / "sql" / "application_roles.sql"
 
 
 def schema_without_transaction_control(text: str) -> str:
@@ -53,8 +51,7 @@ def verify() -> list[str]:
 
     if application_roles != current_roles:
         violations.append(
-            "deployable application role bootstrap drifted from "
-            "docs/security/database-roles.sql",
+            "deployable application role bootstrap drifted from docs/security/database-roles.sql",
         )
 
     return violations
