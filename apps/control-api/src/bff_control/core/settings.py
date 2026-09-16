@@ -8,12 +8,37 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import SecretStr, field_validator
+from pydantic import AnyHttpUrl, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
 ASYNC_DRIVER = "postgresql+asyncpg"
 MIGRATION_DRIVER = "postgresql+psycopg"
+
+
+class ApplicationSettings(BaseSettings):
+    """Process-level control API settings that are safe to expose internally."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="BFF_",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    service_name: str = "bff-control"
+    environment: str = "dev"
+    telemetry_enabled: bool = False
+    otel_traces_endpoint: AnyHttpUrl = AnyHttpUrl(
+        "http://127.0.0.1:4318/v1/traces",
+    )
+
+
+@lru_cache(maxsize=1)
+def get_application_settings() -> ApplicationSettings:
+    """Return process-wide validated application settings."""
+
+    return ApplicationSettings()
 
 
 class DatabaseSettings(BaseSettings):

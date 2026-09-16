@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -53,6 +55,17 @@ class Database:
             except BaseException:
                 await session.rollback()
                 raise
+
+    async def is_ready(self) -> bool:
+        """Return whether the database can execute a minimal statement."""
+
+        try:
+            async with self._engine.connect() as connection:
+                await connection.execute(text("SELECT 1"))
+        except SQLAlchemyError:
+            return False
+
+        return True
 
     async def dispose(self) -> None:
         """Release all pooled database connections."""
