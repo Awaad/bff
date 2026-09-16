@@ -19,3 +19,4 @@ Current series:
 - 0011 Billing/Entitlements/Usage separation
 - 0012 versioned envelope-encrypted credentials
 - 0013 customer history vs platform telemetry
+- 0014 provider-neutral control-plane identity

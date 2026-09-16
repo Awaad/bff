@@ -1,7 +1,7 @@
-# Canonical Cross-Aggregate Invariants — Schema Baseline V2
+# Canonical Cross-Aggregate Invariants
 
-**Status:** Frozen baseline contract  
-**Date:** 2026-09-13
+**Status:** Living canonical contract  
+**Baseline:** V2.1 frozen 2026-09-13; additive evolution follows migration policy
 
 Classification:
 
@@ -19,6 +19,12 @@ Classification:
 5. **DB** Public Binding/Webhook identifiers are separate from internal PKs and have independent activation/revocation history.
 6. **TX** ACTIVE Workspace retains at least one active OWNER.
 7. **DB** At most one active Membership period exists per `(workspace_id, user_id)`.
+8. **DB** Every UserAuthIdentity references exactly one User.
+9. **DB** OIDC authentication identity is globally unique on exact `(issuer, subject)`.
+10. **DB-ACL** Ordinary application roles cannot mutate UserAuthIdentity `user_id`, `issuer`, or `subject`; control may change lifecycle state only.
+11. **APP** Email is profile/contact data and is never the key used to resolve an existing authenticated identity.
+12. **APP/TX** Matching email addresses never auto-merge Users or external identities; linking or merge requires an explicit authenticated workflow.
+13. **APP** Framer client user/project context is not accepted as server-verifiable BFF authentication or project-ownership proof by itself.
 
 ## 2. Project and Framer linking
 
