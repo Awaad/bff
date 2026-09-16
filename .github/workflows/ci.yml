@@ -51,6 +51,9 @@ jobs:
       - name: Python tests without PostgreSQL
         run: uv run pytest -m "not postgres"
 
+      - name: Verify canonical OpenAPI
+        run: uv run python scripts/api/export_openapi.py --check
+
       - name: Verify GitHub Actions pins
         run: uv run python scripts/check_github_actions_pins.py
 

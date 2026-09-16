@@ -17,28 +17,18 @@ const generatedPath = path.resolve(
   process.env.BFF_OPENAPI_TYPES ?? path.join(packageRoot, "src/generated/openapi.d.ts"),
 );
 
-async function exists(file) {
+async function requireFile(file, description) {
   try {
     await fs.access(file);
-    return true;
-  } catch {
-    return false;
+  } catch (error) {
+    throw new Error(`${description} not found at ${file}`, { cause: error });
   }
 }
+
+await requireFile(schemaPath, "canonical OpenAPI schema");
+await requireFile(generatedPath, "generated OpenAPI contract");
 
 const generated = await fs.readFile(generatedPath, "utf8");
-
-if (!(await exists(schemaPath))) {
-  if (!generated.startsWith("// Placeholder until the control API")) {
-    throw new Error(
-      "canonical OpenAPI schema is absent but generated contract is no longer the bootstrap placeholder",
-    );
-  }
-
-  console.log("canonical OpenAPI schema is not present yet; bootstrap contract state is valid");
-  process.exit(0);
-}
-
 const expected = await generateContractFromFile(schemaPath);
 
 if (generated !== expected) {

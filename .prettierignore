@@ -7,5 +7,6 @@ docs/
 node_modules/
 pnpm-lock.yaml
 uv.lock
+artifacts/openapi/
 packages/api-contract/src/generated/
 packages/api-contract/tests/snapshots/
