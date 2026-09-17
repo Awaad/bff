@@ -130,7 +130,8 @@ The adapter test suite must cover at least:
 - wrong client context;
 - expired JWT;
 - unsupported algorithm;
-- unknown `kid` then successful JWKS refresh;
+- unknown `kid` then successful bounded JWKS refresh;
+- unknown `kid` during cooldown;
 - unknown `kid` and refresh failure;
 - rotated signing key;
 - missing `sub`, `sid`, or `jti`;

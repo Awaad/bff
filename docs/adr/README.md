@@ -21,3 +21,4 @@ Current series:
 - 0013 customer history vs platform telemetry
 - 0014 provider-neutral control-plane identity
 - 0015 durable control-plane session admission
+- 0016 bounded JWKS refresh under unknown key IDs
