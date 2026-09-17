@@ -1,7 +1,7 @@
 -- Backend for Framer
 -- Canonical PostgreSQL desired schema
 -- Baseline: V2.1 frozen 2026-09-13
--- Current through: 0002_user_auth_identities — 2026-09-16
+-- Current through: 0003_auth_sessions — 2026-09-17
 -- Supersedes: Baseline V1 integrity review
 --
 -- IDs are application-generated UUIDv7. No database UUIDv7 function is assumed.
@@ -46,6 +46,38 @@ CREATE TABLE user_auth_identities (
 
 CREATE INDEX ix_user_auth_identities_user_id
     ON user_auth_identities(user_id);
+
+CREATE TABLE auth_sessions (
+    id uuid PRIMARY KEY,
+    user_auth_identity_id uuid NOT NULL
+        REFERENCES user_auth_identities(id) ON DELETE RESTRICT,
+    provider_session_id text NOT NULL CHECK (length(provider_session_id) > 0),
+    expires_at timestamptz NOT NULL,
+    revoked_at timestamptz,
+    revocation_reason text,
+    provider_revoked_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CHECK (expires_at > created_at),
+    CHECK (
+        (revoked_at IS NULL AND revocation_reason IS NULL)
+        OR (
+            revoked_at IS NOT NULL
+            AND revocation_reason IS NOT NULL
+            AND length(revocation_reason) > 0
+        )
+    ),
+    CHECK (provider_revoked_at IS NULL OR revoked_at IS NOT NULL),
+    UNIQUE (user_auth_identity_id, provider_session_id)
+);
+
+CREATE INDEX ix_auth_sessions_identity_active
+    ON auth_sessions(user_auth_identity_id)
+    WHERE revoked_at IS NULL;
+
+CREATE INDEX ix_auth_sessions_active_expiry
+    ON auth_sessions(expires_at)
+    WHERE revoked_at IS NULL;
 
 CREATE TABLE workspaces (
     id uuid PRIMARY KEY,

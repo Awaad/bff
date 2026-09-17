@@ -1,5 +1,5 @@
 -- Backend for Framer — current database application-role policy
--- Current through migration 0002_user_auth_identities.
+-- Current through migration 0003_auth_sessions.
 -- Run as the same schema/migration owner that creates future objects.
 
 DO $$
@@ -41,6 +41,15 @@ GRANT UPDATE (
     updated_at,
     disabled_at
 ) ON app.user_auth_identities TO bff_control_writer;
+
+-- Local authentication-session identity and absolute TTL are immutable.
+REVOKE UPDATE, DELETE ON app.auth_sessions FROM bff_control_writer;
+GRANT UPDATE (
+    revoked_at,
+    revocation_reason,
+    provider_revoked_at,
+    updated_at
+) ON app.auth_sessions TO bff_control_writer;
 
 -- Runtime admission/config reads.
 GRANT SELECT ON
@@ -84,6 +93,10 @@ REVOKE UPDATE ON app.bindings FROM bff_worker_writer;
 
 -- Authentication identities are control-plane security state.
 REVOKE ALL PRIVILEGES ON app.user_auth_identities
+FROM bff_runtime_writer, bff_worker_writer, bff_retention;
+
+-- Authentication sessions are also control-plane security state.
+REVOKE ALL PRIVILEGES ON app.auth_sessions
 FROM bff_runtime_writer, bff_worker_writer, bff_retention;
 
 -- Write-once published/history state.
