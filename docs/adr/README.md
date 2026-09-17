@@ -20,3 +20,4 @@ Current series:
 - 0012 versioned envelope-encrypted credentials
 - 0013 customer history vs platform telemetry
 - 0014 provider-neutral control-plane identity
+- 0015 durable control-plane session admission

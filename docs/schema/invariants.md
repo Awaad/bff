@@ -25,6 +25,16 @@ Classification:
 11. **APP** Email is profile/contact data and is never the key used to resolve an existing authenticated identity.
 12. **APP/TX** Matching email addresses never auto-merge Users or external identities; linking or merge requires an explicit authenticated workflow.
 13. **APP** Framer client user/project context is not accepted as server-verifiable BFF authentication or project-ownership proof by itself.
+14. **DB** Every AuthSession references exactly one UserAuthIdentity.
+15. **DB** Provider session identity is unique per UserAuthIdentity on `(user_auth_identity_id, provider_session_id)`.
+16. **DB** AuthSession `expires_at` is strictly after local admission creation time.
+17. **DB** AuthSession revocation timestamp and reason are pair-complete; `provider_revoked_at` requires local revocation state.
+18. **DB-ACL** AuthSession identity, provider session ID, creation time, and absolute expiry are immutable under ordinary application roles; control may update revocation metadata only.
+19. **APP** A valid provider token is insufficient without an unrevoked, unexpired local AuthSession plus ACTIVE UserAuthIdentity and User.
+20. **APP** Provider token refresh never extends AuthSession `expires_at`; a new provider session ID requires a new local admission.
+21. **APP** Provider organization/role/permission claims never authorize BFF Workspace access.
+22. **APP** Initial control-plane admission and authorization use PostgreSQL as truth without a positive Valkey allow-cache.
+23. **TX/APP** Local session revocation becomes effective before provider reconciliation and writes durable audit/outbox state where practical.
 
 ## 2. Project and Framer linking
 

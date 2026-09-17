@@ -48,8 +48,10 @@ For an authenticated request or session:
 3. Extract exact `iss` and `sub`.
 4. Resolve one ACTIVE `user_auth_identities` row by `(issuer, subject)`.
 5. Require the referenced `users` row to be ACTIVE.
-6. Establish the internal `user_id`.
-7. Only then evaluate Workspace membership and permission policy.
+6. Resolve the provider session through an unrevoked, unexpired local
+   `auth_sessions` admission.
+7. Establish the internal `(user_id, auth_session_id)` principal.
+8. Only then evaluate Workspace membership and permission policy.
 
 No Workspace identifier supplied by the client is trusted as authorization context
 without membership and policy evaluation.
@@ -120,3 +122,8 @@ to the same BFF `user_id`.
   assertions.
 - OIDC provider choice remains infrastructure configuration, not tenant/domain
   schema.
+- A cryptographically valid provider token without an ACTIVE local BFF session
+  admission is rejected.
+- Provider organization/role/permission claims do not authorize BFF Workspaces.
+- Access/refresh tokens and authorization codes are never stored in
+  `auth_sessions`.
