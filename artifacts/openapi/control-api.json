@@ -1,6 +1,21 @@
 {
   "components": {
     "schemas": {
+      "AuthenticationErrorResponse": {
+        "description": "Stable public authentication failure shape.",
+        "properties": {
+          "detail": {
+            "const": "invalid authentication credentials",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "AuthenticationErrorResponse",
+        "type": "object"
+      },
       "LivenessResponse": {
         "properties": {
           "status": {
@@ -13,6 +28,38 @@
           "status"
         ],
         "title": "LivenessResponse",
+        "type": "object"
+      },
+      "MeResponse": {
+        "description": "Current authenticated BFF user.",
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "display_name"
+        ],
+        "title": "MeResponse",
         "type": "object"
       },
       "ReadinessResponse": {
@@ -31,6 +78,12 @@
         ],
         "title": "ReadinessResponse",
         "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
       }
     }
   },
@@ -91,6 +144,43 @@
         "summary": "Readiness probe",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "description": "Return the BFF user established by token verification and local admission.",
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            },
+            "description": "Authentication required"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get current user",
+        "tags": [
+          "identity"
         ]
       }
     }

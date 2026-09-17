@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import pytest
-
 from bff_control.domains.authentication.contracts import (
     AccessTokenVerificationError,
     PrincipalAuthenticationError,

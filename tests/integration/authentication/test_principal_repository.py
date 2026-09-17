@@ -4,13 +4,13 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import pytest
-
 from bff_control.core.settings import DatabaseSettings
 from bff_control.domains.authentication.models import VerifiedAccessToken
 from bff_control.infrastructure.db.database import Database
 from bff_control.infrastructure.db.principal_repository import (
     SqlAlchemyPrincipalRepository,
 )
+
 from tests.support.database import DatabaseTestEnvironment
 
 pytestmark = [pytest.mark.postgres, pytest.mark.asyncio]

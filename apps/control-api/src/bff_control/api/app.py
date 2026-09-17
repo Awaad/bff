@@ -2,45 +2,43 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from bff_control.api.contracts import DatabaseLifecycle, TelemetryLifecycle
+from bff_control.api.contracts import ApplicationResources
 from bff_control.api.health import router as health_router
+from bff_control.api.me import router as me_router
 
-DatabaseFactory = Callable[[], DatabaseLifecycle]
-TelemetryFactory = Callable[[], TelemetryLifecycle]
+ResourceFactory = Callable[[], ApplicationResources]
 
 
-def create_app(
-    *,
-    database_factory: DatabaseFactory,
-    telemetry_factory: TelemetryFactory,
-) -> FastAPI:
+def create_app(*, resource_factory: ResourceFactory) -> FastAPI:
     """Create the control API with explicitly supplied process resources."""
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        database = database_factory()
-        telemetry = telemetry_factory()
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+        resources = resource_factory()
 
-        app.state.database = database
-        app.state.telemetry = telemetry
+        app.state.database = resources.database
+        app.state.telemetry = resources.telemetry
+        app.state.authenticator = resources.authenticator
 
-        with telemetry.tracer.start_as_current_span("control_api.startup"):
+        with resources.telemetry.tracer.start_as_current_span("control_api.startup"):
             pass
 
         try:
             yield
         finally:
             try:
-                await database.dispose()
+                await resources.database.dispose()
             finally:
-                with telemetry.tracer.start_as_current_span("control_api.shutdown"):
+                with resources.telemetry.tracer.start_as_current_span(
+                    "control_api.shutdown",
+                ):
                     pass
-                telemetry.shutdown()
+                resources.telemetry.shutdown()
 
     app = FastAPI(
         title="Backend for Framer Control API",
@@ -48,4 +46,5 @@ def create_app(
         lifespan=lifespan,
     )
     app.include_router(health_router)
+    app.include_router(me_router)
     return app

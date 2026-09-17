@@ -17,4 +17,6 @@ def test_openapi_render_is_deterministic() -> None:
         "title": "Backend for Framer Control API",
         "version": "0.0.0",
     }
-    assert sorted(schema["paths"]) == ["/livez", "/readyz"]
+    assert sorted(schema["paths"]) == ["/livez", "/readyz", "/v1/me"]
+    assert schema["paths"]["/v1/me"]["get"]["operationId"] == "getMe"
+    assert schema["paths"]["/v1/me"]["get"]["security"] == [{"HTTPBearer": []}]

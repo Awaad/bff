@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol
 
 from opentelemetry.trace import Tracer
+
+from bff_control.domains.authentication.contracts import PrincipalAuthenticator
 
 
 class DatabaseLifecycle(Protocol):
@@ -22,3 +25,12 @@ class TelemetryLifecycle(Protocol):
     def tracer(self) -> Tracer: ...
 
     def shutdown(self) -> None: ...
+
+
+@dataclass(frozen=True, slots=True)
+class ApplicationResources:
+    """Process resources constructed together by the composition root."""
+
+    database: DatabaseLifecycle
+    telemetry: TelemetryLifecycle
+    authenticator: PrincipalAuthenticator
