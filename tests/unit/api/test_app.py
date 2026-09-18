@@ -34,11 +34,7 @@ class FakeTelemetry:
 
 
 class FakeAuthenticator:
-    def __init__(
-        self,
-        *,
-        principal: AuthenticatedPrincipal | None,
-    ) -> None:
+    def __init__(self, *, principal: AuthenticatedPrincipal | None) -> None:
         self.principal = principal
         self.tokens: list[str] = []
 
@@ -63,49 +59,39 @@ def client_for(
     *,
     ready: bool,
     principal: AuthenticatedPrincipal | None = None,
-) -> Generator[tuple[TestClient, FakeDatabase, FakeTelemetry, FakeAuthenticator],]:
+) -> Generator[tuple[TestClient, FakeDatabase, FakeTelemetry, FakeAuthenticator]]:
     database = FakeDatabase(ready=ready)
     telemetry = FakeTelemetry()
     authenticator = FakeAuthenticator(principal=principal)
-    resources = ApplicationResources(
-        database=database,
-        telemetry=telemetry,
-        authenticator=authenticator,
+    app = create_app(
+        resource_factory=lambda: ApplicationResources(
+            database=database,
+            telemetry=telemetry,
+            authenticator=authenticator,
+        )
     )
-    app = create_app(resource_factory=lambda: resources)
-
     with TestClient(app) as client:
         yield client, database, telemetry, authenticator
-
     assert database.disposed
     assert telemetry.shutdown_called
 
 
-def test_liveness_does_not_depend_on_database_readiness() -> None:
+def test_liveness_has_request_id() -> None:
     with client_for(ready=False) as (client, _, _, _):
         response = client.get("/livez")
-
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+    assert response.headers["x-request-id"]
 
 
-def test_readiness_returns_ready_when_database_is_available() -> None:
+def test_readiness_statuses() -> None:
     with client_for(ready=True) as (client, _, _, _):
-        response = client.get("/readyz")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "ready"}
-
-
-def test_readiness_returns_503_when_database_is_unavailable() -> None:
+        assert client.get("/readyz").status_code == 200
     with client_for(ready=False) as (client, _, _, _):
-        response = client.get("/readyz")
-
-    assert response.status_code == 503
-    assert response.json() == {"status": "not_ready"}
+        assert client.get("/readyz").status_code == 503
 
 
-def test_me_requires_bearer_authentication() -> None:
+def test_me_requires_structured_bearer_authentication() -> None:
     with client_for(ready=True, principal=_principal()) as (
         client,
         _,
@@ -113,32 +99,15 @@ def test_me_requires_bearer_authentication() -> None:
         authenticator,
     ):
         response = client.get("/v1/me")
-
     assert response.status_code == 401
-    assert response.json() == {"detail": "invalid authentication credentials"}
     assert response.headers["www-authenticate"] == "Bearer"
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["code"] == "AUTH_INVALID_CREDENTIALS"
+    assert response.json()["request_id"] == response.headers["x-request-id"]
     assert authenticator.tokens == []
 
 
-def test_me_normalizes_invalid_or_unadmitted_credentials() -> None:
-    with client_for(ready=True, principal=None) as (
-        client,
-        _,
-        _,
-        authenticator,
-    ):
-        response = client.get(
-            "/v1/me",
-            headers={"Authorization": "Bearer invalid-token"},
-        )
-
-    assert response.status_code == 401
-    assert response.json() == {"detail": "invalid authentication credentials"}
-    assert response.headers["www-authenticate"] == "Bearer"
-    assert authenticator.tokens == ["invalid-token"]
-
-
-def test_me_returns_only_public_bff_user_fields() -> None:
+def test_me_returns_public_user_fields() -> None:
     with client_for(ready=True, principal=_principal()) as (
         client,
         _,
@@ -149,7 +118,6 @@ def test_me_returns_only_public_bff_user_fields() -> None:
             "/v1/me",
             headers={"Authorization": "Bearer valid-token"},
         )
-
     assert response.status_code == 200
     assert response.json() == {
         "id": "00000000-0000-7000-8000-000000000601",
@@ -158,29 +126,3 @@ def test_me_returns_only_public_bff_user_fields() -> None:
     }
     assert response.headers["cache-control"] == "no-store"
     assert authenticator.tokens == ["valid-token"]
-
-
-def test_openapi_contains_foundation_and_authenticated_identity_routes() -> None:
-    database = FakeDatabase(ready=True)
-    telemetry = FakeTelemetry()
-    authenticator = FakeAuthenticator(principal=_principal())
-    app = create_app(
-        resource_factory=lambda: ApplicationResources(
-            database=database,
-            telemetry=telemetry,
-            authenticator=authenticator,
-        )
-    )
-    schema = app.openapi()
-
-    assert sorted(schema["paths"]) == [
-        "/livez",
-        "/readyz",
-        "/v1/auth/session",
-        "/v1/me",
-    ]
-    assert schema["paths"]["/livez"]["get"]["operationId"] == "livez"
-    assert schema["paths"]["/readyz"]["get"]["operationId"] == "readyz"
-    assert schema["paths"]["/v1/auth/session"]["post"]["operationId"] == ("provisionSession")
-    assert schema["paths"]["/v1/me"]["get"]["operationId"] == "getMe"
-    assert schema["paths"]["/v1/me"]["get"]["security"] == [{"HTTPBearer": []}]

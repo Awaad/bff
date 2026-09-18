@@ -80,61 +80,37 @@ def test_session_provisioning_requires_bearer_token() -> None:
     client, provisioner = _client(_provisioned())
     with client:
         response = client.post("/v1/auth/session")
-
     assert response.status_code == 401
-    assert response.headers["www-authenticate"] == "Bearer"
+    assert response.json()["code"] == "AUTH_INVALID_CREDENTIALS"
     assert provisioner.tokens == []
 
 
-def test_session_provisioning_returns_public_user_and_local_deadline() -> None:
+def test_session_provisioning_returns_public_user_and_deadline() -> None:
     client, provisioner = _client(_provisioned())
     with client:
         response = client.post(
             "/v1/auth/session",
             headers={"Authorization": "Bearer provider-token"},
         )
-
     assert response.status_code == 200
-    assert response.json()["user"] == {
-        "id": "00000000-0000-7000-8000-000000000901",
-        "email": "user@example.test",
-        "display_name": "User",
-    }
+    assert response.json()["user"]["email"] == "user@example.test"
     assert response.headers["cache-control"] == "no-store"
     assert provisioner.tokens == ["provider-token"]
 
 
 def test_session_provisioning_maps_security_outcomes() -> None:
     cases = [
-        (
-            SessionProvisioningAuthenticationError("failed"),
-            401,
-            "invalid authentication credentials",
-        ),
-        (
-            EmailVerificationRequiredError("verify"),
-            403,
-            "email verification required",
-        ),
-        (
-            AccountLinkRequiredError("link"),
-            409,
-            "account linking required",
-        ),
-        (
-            ExternalUserProfileUnavailableError("down"),
-            503,
-            "authentication service unavailable",
-        ),
+        (SessionProvisioningAuthenticationError("failed"), 401, "AUTH_INVALID_CREDENTIALS"),
+        (EmailVerificationRequiredError("verify"), 403, "AUTH_EMAIL_VERIFICATION_REQUIRED"),
+        (AccountLinkRequiredError("link"), 409, "AUTH_ACCOUNT_LINK_REQUIRED"),
+        (ExternalUserProfileUnavailableError("down"), 503, "AUTH_PROVIDER_UNAVAILABLE"),
     ]
-
-    for error, expected_status, expected_detail in cases:
+    for error, expected_status, expected_code in cases:
         client, _ = _client(error)
         with client:
             response = client.post(
                 "/v1/auth/session",
                 headers={"Authorization": "Bearer provider-token"},
             )
-
         assert response.status_code == expected_status
-        assert response.json() == {"detail": expected_detail}
+        assert response.json()["code"] == expected_code

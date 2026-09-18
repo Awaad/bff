@@ -8,7 +8,6 @@ from scripts.api.export_openapi import render_openapi
 def test_openapi_render_is_deterministic() -> None:
     first = render_openapi()
     second = render_openapi()
-
     assert first == second
     assert first.endswith("\n")
 
@@ -23,7 +22,16 @@ def test_openapi_render_is_deterministic() -> None:
         "/v1/auth/session",
         "/v1/me",
     ]
-    assert schema["paths"]["/v1/auth/session"]["post"]["operationId"] == ("provisionSession")
-    assert schema["paths"]["/v1/auth/session"]["post"]["security"] == [{"HTTPBearer": []}]
-    assert schema["paths"]["/v1/me"]["get"]["operationId"] == "getMe"
-    assert schema["paths"]["/v1/me"]["get"]["security"] == [{"HTTPBearer": []}]
+    session = schema["paths"]["/v1/auth/session"]["post"]
+    me = schema["paths"]["/v1/me"]["get"]
+    assert session["operationId"] == "provisionSession"
+    assert session["security"] == [{"HTTPBearer": []}]
+    assert me["operationId"] == "getMe"
+    assert me["security"] == [{"HTTPBearer": []}]
+    for operation in (session, me):
+        assert "500" in operation["responses"]
+        for response in operation["responses"].values():
+            assert "X-Request-ID" in response["headers"]
+    assert "application/problem+json" in session["responses"]["401"]["content"]
+    assert "application/problem+json" in session["responses"]["500"]["content"]
+    assert "application/problem+json" in me["responses"]["401"]["content"]

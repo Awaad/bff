@@ -5,31 +5,27 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-
 from bff_control.api.contracts import ApplicationResources
-from bff_control.api.health import router as health_router
-from bff_control.api.me import router as me_router
-from bff_control.api.session_provisioning import router as session_provisioning_router
+from bff_control.api.middleware.request_context import RequestContextMiddleware
+from bff_control.api.problems.handlers import register_problem_handlers
+from bff_control.api.problems.openapi import ControlApi
+from bff_control.api.routes.health import router as health_router
+from bff_control.api.routes.v1.auth import router as auth_router
+from bff_control.api.routes.v1.identity import router as identity_router
 
 ResourceFactory = Callable[[], ApplicationResources]
 
 
-def create_app(*, resource_factory: ResourceFactory) -> FastAPI:
-    """Create the control API with explicitly supplied process resources."""
-
+def create_app(*, resource_factory: ResourceFactory) -> ControlApi:
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    async def lifespan(app: ControlApi) -> AsyncGenerator[None]:
         resources = resource_factory()
-
         app.state.database = resources.database
         app.state.telemetry = resources.telemetry
         app.state.authenticator = resources.authenticator
         app.state.session_provisioner = resources.session_provisioner
-
         with resources.telemetry.tracer.start_as_current_span("control_api.startup"):
             pass
-
         try:
             yield
         finally:
@@ -42,12 +38,14 @@ def create_app(*, resource_factory: ResourceFactory) -> FastAPI:
                     pass
                 resources.telemetry.shutdown()
 
-    app = FastAPI(
+    app = ControlApi(
         title="Backend for Framer Control API",
         version="0.0.0",
         lifespan=lifespan,
     )
+    register_problem_handlers(app)
+    app.add_middleware(RequestContextMiddleware)
     app.include_router(health_router)
-    app.include_router(session_provisioning_router)
-    app.include_router(me_router)
+    app.include_router(auth_router)
+    app.include_router(identity_router)
     return app
