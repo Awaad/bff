@@ -26,6 +26,7 @@ from bff_control.domains.authentication.provisioning_contracts import (
     ExternalUserProfileUnavailableError,
     SessionProvisioningAuthenticationError,
 )
+from bff_control.domains.workspaces.contracts import WorkspaceNotFoundError
 
 _PROBLEM_LOGGER = logging.getLogger("bff_control.api.problems")
 
@@ -145,6 +146,14 @@ async def _provider_unavailable_handler(
     return _problem_response(request, ProblemCode.AUTH_PROVIDER_UNAVAILABLE)
 
 
+async def _workspace_not_found_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    del exc
+    return _problem_response(request, ProblemCode.WORKSPACE_NOT_FOUND)
+
+
 async def _validation_handler(
     request: Request,
     exc: Exception,
@@ -250,6 +259,7 @@ def register_problem_handlers(app: FastAPI) -> None:
         ExternalUserProfileUnavailableError,
         _provider_unavailable_handler,
     )
+    app.add_exception_handler(WorkspaceNotFoundError, _workspace_not_found_handler)
     app.add_exception_handler(RequestValidationError, _validation_handler)
     app.add_exception_handler(404, _not_found_handler)
     app.add_exception_handler(405, _method_not_allowed_handler)

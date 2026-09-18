@@ -12,6 +12,7 @@ from bff_control.core.settings import (
 )
 from bff_control.domains.authentication.provisioning import SessionProvisioningService
 from bff_control.domains.authentication.service import AuthenticationService
+from bff_control.domains.workspaces.service import WorkspaceService
 from bff_control.infrastructure.auth.workos import WorkOSAccessTokenVerifier
 from bff_control.infrastructure.auth.workos_profile import WorkOSUserProfileClient
 from bff_control.infrastructure.db.database import Database
@@ -21,6 +22,7 @@ from bff_control.infrastructure.db.principal_repository import (
 from bff_control.infrastructure.db.session_provisioning_repository import (
     SqlAlchemySessionProvisioningRepository,
 )
+from bff_control.infrastructure.db.workspace_repository import SqlAlchemyWorkspaceRepository
 from bff_control.infrastructure.observability.telemetry import configure_telemetry
 
 
@@ -41,6 +43,9 @@ def _resource_factory() -> ApplicationResources:
         absolute_ttl_seconds=authentication_settings.session_absolute_ttl_seconds,
     )
 
+    workspace_repository = SqlAlchemyWorkspaceRepository(database)
+    workspace_service = WorkspaceService(workspace_repository)
+
     telemetry = configure_telemetry(get_application_settings())
 
     return ApplicationResources(
@@ -48,6 +53,7 @@ def _resource_factory() -> ApplicationResources:
         telemetry=telemetry,
         authenticator=authenticator,
         session_provisioner=session_provisioner,
+        workspace_service=workspace_service,
     )
 
 

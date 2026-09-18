@@ -52,6 +52,14 @@ PROBLEM_SPECS: Final[dict[ProblemCode, ProblemSpec]] = {
         detail="Authentication is temporarily unavailable.",
         retryable=True,
     ),
+    ProblemCode.WORKSPACE_NOT_FOUND: ProblemSpec(
+        code=ProblemCode.WORKSPACE_NOT_FOUND,
+        type_uri="urn:uuid:14e7c170-79a8-550d-a696-9cbe4d8a089f",
+        title="Workspace not found",
+        status=404,
+        detail="The requested Workspace was not found.",
+        retryable=False,
+    ),
     ProblemCode.REQUEST_VALIDATION_FAILED: ProblemSpec(
         code=ProblemCode.REQUEST_VALIDATION_FAILED,
         type_uri="urn:uuid:542c876a-0825-5cc6-a84b-f55bccc0087a",

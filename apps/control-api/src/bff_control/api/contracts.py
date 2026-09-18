@@ -9,6 +9,7 @@ from opentelemetry.trace import Tracer
 
 from bff_control.domains.authentication.contracts import PrincipalAuthenticator
 from bff_control.domains.authentication.provisioning_contracts import SessionProvisioner
+from bff_control.domains.workspaces.contracts import WorkspaceManager
 
 
 class DatabaseLifecycle(Protocol):
@@ -36,3 +37,4 @@ class ApplicationResources:
     telemetry: TelemetryLifecycle
     authenticator: PrincipalAuthenticator
     session_provisioner: SessionProvisioner | None = None
+    workspace_service: WorkspaceManager | None = None

@@ -24,6 +24,10 @@ _HTTP_METHODS: Final = {
     "patch",
     "trace",
 }
+_FASTAPI_VALIDATION_SCHEMAS: Final = (
+    "HTTPValidationError",
+    "ValidationError",
+)
 
 
 def problem_openapi_response(code: ProblemCode) -> dict[str, Any]:
@@ -95,6 +99,34 @@ def _normalize_operation(path: str, operation: dict[str, Any]) -> None:
             _inject_request_id_header(response)
 
 
+def _contains_ref(value: object, ref: str) -> bool:
+    if isinstance(value, dict):
+        if value.get("$ref") == ref:
+            return True
+        return any(_contains_ref(child, ref) for child in value.values())
+    if isinstance(value, list):
+        return any(_contains_ref(child, ref) for child in value)
+    return False
+
+
+def _prune_unreferenced_fastapi_validation_schemas(schema: dict[str, Any]) -> None:
+    components = schema.get("components")
+    if not isinstance(components, dict):
+        return
+    schemas = components.get("schemas")
+    if not isinstance(schemas, dict):
+        return
+
+    for schema_name in _FASTAPI_VALIDATION_SCHEMAS:
+        candidate = schemas.pop(schema_name, None)
+        if candidate is None:
+            continue
+
+        ref = f"#/components/schemas/{schema_name}"
+        if _contains_ref(schema, ref):
+            schemas[schema_name] = candidate
+
+
 def normalize_openapi_contract(schema: dict[str, Any]) -> dict[str, Any]:
     paths = schema.get("paths")
     if not isinstance(paths, dict):
@@ -105,6 +137,7 @@ def normalize_openapi_contract(schema: dict[str, Any]) -> dict[str, Any]:
         for method, operation in path_item.items():
             if method in _HTTP_METHODS and isinstance(operation, dict):
                 _normalize_operation(path, operation)
+    _prune_unreferenced_fastapi_validation_schemas(schema)
     return schema
 
 
