@@ -74,9 +74,7 @@ class AuthenticationSettings(BaseSettings):
     @classmethod
     def validate_issuer(cls, value: str) -> str:
         if not value or value != value.strip():
-            raise ValueError(
-                "issuer must be a non-empty exact URL without surrounding whitespace"
-            )
+            raise ValueError("issuer must be a non-empty exact URL without surrounding whitespace")
 
         parsed = urlsplit(value)
         if (

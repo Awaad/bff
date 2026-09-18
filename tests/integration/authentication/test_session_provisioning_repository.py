@@ -4,7 +4,6 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from bff_control.core.settings import DatabaseSettings
 from bff_control.domains.authentication.models import VerifiedAccessToken
 from bff_control.domains.authentication.provisioning_contracts import (
@@ -16,6 +15,7 @@ from bff_control.infrastructure.db.database import Database
 from bff_control.infrastructure.db.session_provisioning_repository import (
     SqlAlchemySessionProvisioningRepository,
 )
+
 from tests.support.database import DatabaseTestEnvironment
 
 pytestmark = [pytest.mark.postgres, pytest.mark.asyncio]

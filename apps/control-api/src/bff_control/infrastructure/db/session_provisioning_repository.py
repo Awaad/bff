@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import text
+from sqlalchemy.engine import RowMapping
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bff_control.core.ids import uuid7
@@ -209,10 +209,7 @@ class SqlAlchemySessionProvisioningRepository:
         return ProvisioningIdentity(
             identity_id=self._uuid_value(row["identity_id"], "identity_id"),
             user_id=self._uuid_value(row["user_id"], "user_id"),
-            active=(
-                row["identity_status"] == "ACTIVE"
-                and row["user_status"] == "ACTIVE"
-            ),
+            active=(row["identity_status"] == "ACTIVE" and row["user_status"] == "ACTIVE"),
         )
 
     async def admit_existing_identity(
@@ -222,19 +219,18 @@ class SqlAlchemySessionProvisioningRepository:
         *,
         ttl_seconds: int,
     ) -> ProvisionedSession:
-        async with self._database.session() as session:
-            async with session.begin():
-                active = await self._lock_active_identity(
-                    session,
-                    token,
-                    identity.identity_id,
-                )
-                return await self._admit_session(
-                    session,
-                    token,
-                    active,
-                    ttl_seconds=ttl_seconds,
-                )
+        async with self._database.session() as session, session.begin():
+            active = await self._lock_active_identity(
+                session,
+                token,
+                identity.identity_id,
+            )
+            return await self._admit_session(
+                session,
+                token,
+                active,
+                ttl_seconds=ttl_seconds,
+            )
 
     async def provision_new_identity(
         self,
@@ -243,29 +239,28 @@ class SqlAlchemySessionProvisioningRepository:
         *,
         ttl_seconds: int,
     ) -> ProvisionedSession:
-        async with self._database.session() as session:
-            async with session.begin():
-                existing = await self._find_exact_identity(session, token)
-                if existing is not None:
-                    active = self._require_active(existing)
-                    return await self._admit_session(
-                        session,
-                        token,
-                        active,
-                        ttl_seconds=ttl_seconds,
-                    )
-
-                active = await self._create_identity_or_resolve_race(
-                    session,
-                    token,
-                    profile,
-                )
+        async with self._database.session() as session, session.begin():
+            existing = await self._find_exact_identity(session, token)
+            if existing is not None:
+                active = self._require_active(existing)
                 return await self._admit_session(
                     session,
                     token,
                     active,
                     ttl_seconds=ttl_seconds,
                 )
+
+            active = await self._create_identity_or_resolve_race(
+                session,
+                token,
+                profile,
+            )
+            return await self._admit_session(
+                session,
+                token,
+                active,
+                ttl_seconds=ttl_seconds,
+            )
 
     async def _create_identity_or_resolve_race(
         self,
@@ -316,12 +311,12 @@ class SqlAlchemySessionProvisioningRepository:
                     email=email,
                     display_name=profile.display_name,
                 )
-        except _IdentityRace:
+        except _IdentityRace as error:
             existing = await self._find_exact_identity(session, token)
             if existing is None:
                 raise RuntimeError(
                     "identity uniqueness race resolved without identity row",
-                )
+                ) from error
             return self._require_active(existing)
 
     async def _lock_active_identity(
@@ -349,7 +344,7 @@ class SqlAlchemySessionProvisioningRepository:
         self,
         session: AsyncSession,
         token: VerifiedAccessToken,
-    ) -> Mapping[str, object] | None:
+    ) -> RowMapping | None:
         result = await session.execute(
             _FIND_EXACT_IDENTITY,
             {"issuer": token.issuer, "subject": token.subject},
@@ -358,7 +353,7 @@ class SqlAlchemySessionProvisioningRepository:
 
     def _require_active(
         self,
-        row: Mapping[str, object],
+        row: RowMapping,
     ) -> _ActiveIdentity:
         if row["identity_status"] != "ACTIVE" or row["user_status"] != "ACTIVE":
             raise SessionProvisioningAuthenticationError(
@@ -442,7 +437,7 @@ class SqlAlchemySessionProvisioningRepository:
 
     @staticmethod
     def _active_identity_from_row(
-        row: Mapping[str, object],
+        row: RowMapping,
     ) -> _ActiveIdentity:
         return _ActiveIdentity(
             identity_id=SqlAlchemySessionProvisioningRepository._uuid_value(

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import httpx
 import pytest
-
 from bff_control.core.settings import WorkOSSettings
 from bff_control.domains.authentication.provisioning_contracts import (
     ExternalUserProfileNotFoundError,

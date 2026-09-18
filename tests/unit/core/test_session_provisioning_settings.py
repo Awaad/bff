@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
-
 from bff_control.core.settings import AuthenticationSettings, WorkOSSettings
+from pydantic import ValidationError
 
 
 def _auth_settings(**overrides: object) -> AuthenticationSettings:
