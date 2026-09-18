@@ -45,6 +45,38 @@ apps/control-api/src/bff_control/
     persistence models, schemas, enums and policies.
 ```
 
+### API transport layout
+
+The control API is organized by transport responsibility before route family:
+
+```text
+api/
+├── app.py
+├── contracts.py
+├── context.py
+├── dependencies/
+├── middleware/
+├── problems/
+└── routes/
+    ├── health.py
+    └── v1/
+```
+
+Placement rules inside `api`:
+
+- `routes/` owns `APIRouter` endpoint collections;
+- versioned public routes live under `routes/v1/`;
+- `dependencies/` owns reusable FastAPI dependency adapters;
+- `middleware/` owns thin cross-cutting ASGI transport behavior;
+- `problems/` owns the public HTTP Problem Details protocol and exception mapping;
+- `context.py` owns request correlation state shared by API transport helpers;
+- `app.py` composes middleware, exception handlers and routers;
+- do not place new endpoint modules flat at the `api/` root.
+
+A route module should normally group one resource or bounded transport surface. If
+one route family becomes materially complex, it may graduate from one module to a
+subpackage without changing the surrounding transport layout.
+
 ### Placement rules
 
 - `core` must not import `domains`, `api`, or `infrastructure`.

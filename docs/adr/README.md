@@ -23,3 +23,5 @@ Current series:
 - 0015 durable control-plane session admission
 - 0016 bounded JWKS refresh under unknown key IDs
 - 0017 public-client login and local session provisioning
+- 0018 structured API problem details
+- 0019 request context and transport middleware
