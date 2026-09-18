@@ -1,63 +1,6 @@
 {
   "components": {
     "schemas": {
-      "AccountLinkRequiredResponse": {
-        "properties": {
-          "detail": {
-            "const": "account linking required",
-            "title": "Detail",
-            "type": "string"
-          }
-        },
-        "required": [
-          "detail"
-        ],
-        "title": "AccountLinkRequiredResponse",
-        "type": "object"
-      },
-      "AuthenticationErrorResponse": {
-        "description": "Stable public authentication failure shape.",
-        "properties": {
-          "detail": {
-            "const": "invalid authentication credentials",
-            "title": "Detail",
-            "type": "string"
-          }
-        },
-        "required": [
-          "detail"
-        ],
-        "title": "AuthenticationErrorResponse",
-        "type": "object"
-      },
-      "AuthenticationServiceUnavailableResponse": {
-        "properties": {
-          "detail": {
-            "const": "authentication service unavailable",
-            "title": "Detail",
-            "type": "string"
-          }
-        },
-        "required": [
-          "detail"
-        ],
-        "title": "AuthenticationServiceUnavailableResponse",
-        "type": "object"
-      },
-      "EmailVerificationRequiredResponse": {
-        "properties": {
-          "detail": {
-            "const": "email verification required",
-            "title": "Detail",
-            "type": "string"
-          }
-        },
-        "required": [
-          "detail"
-        ],
-        "title": "EmailVerificationRequiredResponse",
-        "type": "object"
-      },
       "LivenessResponse": {
         "properties": {
           "status": {
@@ -73,7 +16,6 @@
         "type": "object"
       },
       "MeResponse": {
-        "description": "Current authenticated BFF user.",
         "properties": {
           "display_name": {
             "anyOf": [
@@ -104,8 +46,93 @@
         "title": "MeResponse",
         "type": "object"
       },
+      "ProblemCode": {
+        "description": "Stable machine-readable public problem codes.",
+        "enum": [
+          "AUTH_INVALID_CREDENTIALS",
+          "AUTH_EMAIL_VERIFICATION_REQUIRED",
+          "AUTH_ACCOUNT_LINK_REQUIRED",
+          "AUTH_PROVIDER_UNAVAILABLE",
+          "REQUEST_VALIDATION_FAILED",
+          "REQUEST_NOT_FOUND",
+          "REQUEST_METHOD_NOT_ALLOWED",
+          "REQUEST_REJECTED",
+          "INTERNAL_ERROR"
+        ],
+        "title": "ProblemCode",
+        "type": "string"
+      },
+      "ProblemDetail": {
+        "description": "RFC 9457 problem plus stable BFF extensions.",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ProblemCode"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ValidationIssue"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors"
+          },
+          "instance": {
+            "title": "Instance",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "retryable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retryable"
+          },
+          "status": {
+            "maximum": 599.0,
+            "minimum": 100.0,
+            "title": "Status",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "code",
+          "request_id"
+        ],
+        "title": "ProblemDetail",
+        "type": "object"
+      },
       "ProvisionedUserResponse": {
-        "description": "Public BFF User fields returned after local admission.",
         "properties": {
           "display_name": {
             "anyOf": [
@@ -154,7 +181,6 @@
         "type": "object"
       },
       "SessionProvisioningResponse": {
-        "description": "Idempotent local admission result.",
         "properties": {
           "expires_at": {
             "format": "date-time",
@@ -172,19 +198,38 @@
         "title": "SessionProvisioningResponse",
         "type": "object"
       },
-      "bff_control__api__session_provisioning__AuthenticationErrorResponse": {
+      "ValidationIssue": {
+        "description": "One safe request-validation issue.",
         "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ValidationIssueCode"
+          },
           "detail": {
-            "const": "invalid authentication credentials",
             "title": "Detail",
+            "type": "string"
+          },
+          "pointer": {
+            "title": "Pointer",
             "type": "string"
           }
         },
         "required": [
+          "pointer",
+          "code",
           "detail"
         ],
-        "title": "AuthenticationErrorResponse",
+        "title": "ValidationIssue",
         "type": "object"
+      },
+      "ValidationIssueCode": {
+        "description": "Stable machine-readable validation issue codes.",
+        "enum": [
+          "REQUIRED",
+          "INVALID_JSON",
+          "INVALID_VALUE"
+        ],
+        "title": "ValidationIssueCode",
+        "type": "string"
       }
     },
     "securitySchemes": {
@@ -202,7 +247,6 @@
   "paths": {
     "/livez": {
       "get": {
-        "description": "Report whether the API process is alive.",
         "operationId": "livez",
         "responses": {
           "200": {
@@ -213,7 +257,16 @@
                 }
               }
             },
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "summary": "Liveness probe",
@@ -224,7 +277,6 @@
     },
     "/readyz": {
       "get": {
-        "description": "Report whether the API can serve requests that depend on PostgreSQL.",
         "operationId": "readyz",
         "responses": {
           "200": {
@@ -235,7 +287,16 @@
                 }
               }
             },
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           },
           "503": {
             "content": {
@@ -245,7 +306,16 @@
                 }
               }
             },
-            "description": "Database is not ready"
+            "description": "Database is not ready",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "summary": "Readiness probe",
@@ -256,7 +326,6 @@
     },
     "/v1/auth/session": {
       "post": {
-        "description": "Create or reuse BFF admission from a verified provider bearer token.",
         "operationId": "provisionSession",
         "responses": {
           "200": {
@@ -267,47 +336,111 @@
                 }
               }
             },
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           },
           "401": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/bff_control__api__session_provisioning__AuthenticationErrorResponse"
+                  "$ref": "#/components/schemas/ProblemDetail"
                 }
               }
             },
-            "description": "Authentication failed"
+            "description": "Invalid authentication credentials",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           },
           "403": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EmailVerificationRequiredResponse"
+                  "$ref": "#/components/schemas/ProblemDetail"
                 }
               }
             },
-            "description": "Verified email required for first provisioning"
+            "description": "Email verification required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           },
           "409": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AccountLinkRequiredResponse"
+                  "$ref": "#/components/schemas/ProblemDetail"
                 }
               }
             },
-            "description": "Existing BFF account requires explicit linking"
+            "description": "Account linking required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Internal server error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           },
           "503": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthenticationServiceUnavailableResponse"
+                  "$ref": "#/components/schemas/ProblemDetail"
                 }
               }
             },
-            "description": "Authentication provider temporarily unavailable"
+            "description": "Authentication service unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -323,7 +456,6 @@
     },
     "/v1/me": {
       "get": {
-        "description": "Return the BFF user established by token verification and local admission.",
         "operationId": "getMe",
         "responses": {
           "200": {
@@ -334,17 +466,54 @@
                 }
               }
             },
-            "description": "Successful Response"
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           },
           "401": {
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                  "$ref": "#/components/schemas/ProblemDetail"
                 }
               }
             },
-            "description": "Authentication required"
+            "description": "Invalid authentication credentials",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Internal server error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated request correlation identifier.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "security": [

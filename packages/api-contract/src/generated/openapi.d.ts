@@ -7,10 +7,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Liveness probe
-         * @description Report whether the API process is alive.
-         */
+        /** Liveness probe */
         get: operations["livez"];
         put?: never;
         post?: never;
@@ -27,10 +24,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Readiness probe
-         * @description Report whether the API can serve requests that depend on PostgreSQL.
-         */
+        /** Readiness probe */
         get: operations["readyz"];
         put?: never;
         post?: never;
@@ -49,10 +43,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Provision local authenticated session
-         * @description Create or reuse BFF admission from a verified provider bearer token.
-         */
+        /** Provision local authenticated session */
         post: operations["provisionSession"];
         delete?: never;
         options?: never;
@@ -67,10 +58,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get current user
-         * @description Return the BFF user established by token verification and local admission.
-         */
+        /** Get current user */
         get: operations["getMe"];
         put?: never;
         post?: never;
@@ -84,41 +72,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AccountLinkRequiredResponse */
-        AccountLinkRequiredResponse: {
-            /**
-             * Detail
-             * @constant
-             */
-            detail: "account linking required";
-        };
-        /**
-         * AuthenticationErrorResponse
-         * @description Stable public authentication failure shape.
-         */
-        AuthenticationErrorResponse: {
-            /**
-             * Detail
-             * @constant
-             */
-            detail: "invalid authentication credentials";
-        };
-        /** AuthenticationServiceUnavailableResponse */
-        AuthenticationServiceUnavailableResponse: {
-            /**
-             * Detail
-             * @constant
-             */
-            detail: "authentication service unavailable";
-        };
-        /** EmailVerificationRequiredResponse */
-        EmailVerificationRequiredResponse: {
-            /**
-             * Detail
-             * @constant
-             */
-            detail: "email verification required";
-        };
         /** LivenessResponse */
         LivenessResponse: {
             /**
@@ -127,10 +80,7 @@ export interface components {
              */
             status: "ok";
         };
-        /**
-         * MeResponse
-         * @description Current authenticated BFF user.
-         */
+        /** MeResponse */
         MeResponse: {
             /** Display Name */
             display_name: string | null;
@@ -143,9 +93,35 @@ export interface components {
             id: string;
         };
         /**
-         * ProvisionedUserResponse
-         * @description Public BFF User fields returned after local admission.
+         * ProblemCode
+         * @description Stable machine-readable public problem codes.
+         * @enum {string}
          */
+        ProblemCode: "AUTH_INVALID_CREDENTIALS" | "AUTH_EMAIL_VERIFICATION_REQUIRED" | "AUTH_ACCOUNT_LINK_REQUIRED" | "AUTH_PROVIDER_UNAVAILABLE" | "REQUEST_VALIDATION_FAILED" | "REQUEST_NOT_FOUND" | "REQUEST_METHOD_NOT_ALLOWED" | "REQUEST_REJECTED" | "INTERNAL_ERROR";
+        /**
+         * ProblemDetail
+         * @description RFC 9457 problem plus stable BFF extensions.
+         */
+        ProblemDetail: {
+            code: components["schemas"]["ProblemCode"];
+            /** Detail */
+            detail: string;
+            /** Errors */
+            errors?: components["schemas"]["ValidationIssue"][] | null;
+            /** Instance */
+            instance: string;
+            /** Request Id */
+            request_id: string;
+            /** Retryable */
+            retryable?: boolean | null;
+            /** Status */
+            status: number;
+            /** Title */
+            title: string;
+            /** Type */
+            type: string;
+        };
+        /** ProvisionedUserResponse */
         ProvisionedUserResponse: {
             /** Display Name */
             display_name: string | null;
@@ -165,10 +141,7 @@ export interface components {
              */
             status: "ready" | "not_ready";
         };
-        /**
-         * SessionProvisioningResponse
-         * @description Idempotent local admission result.
-         */
+        /** SessionProvisioningResponse */
         SessionProvisioningResponse: {
             /**
              * Expires At
@@ -177,14 +150,23 @@ export interface components {
             expires_at: string;
             user: components["schemas"]["ProvisionedUserResponse"];
         };
-        /** AuthenticationErrorResponse */
-        bff_control__api__session_provisioning__AuthenticationErrorResponse: {
-            /**
-             * Detail
-             * @constant
-             */
-            detail: "invalid authentication credentials";
+        /**
+         * ValidationIssue
+         * @description One safe request-validation issue.
+         */
+        ValidationIssue: {
+            code: components["schemas"]["ValidationIssueCode"];
+            /** Detail */
+            detail: string;
+            /** Pointer */
+            pointer: string;
         };
+        /**
+         * ValidationIssueCode
+         * @description Stable machine-readable validation issue codes.
+         * @enum {string}
+         */
+        ValidationIssueCode: "REQUIRED" | "INVALID_JSON" | "INVALID_VALUE";
     };
     responses: never;
     parameters: never;
@@ -206,6 +188,8 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -226,6 +210,8 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -235,6 +221,8 @@ export interface operations {
             /** @description Database is not ready */
             503: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -255,46 +243,67 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["SessionProvisioningResponse"];
                 };
             };
-            /** @description Authentication failed */
+            /** @description Invalid authentication credentials */
             401: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["bff_control__api__session_provisioning__AuthenticationErrorResponse"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Verified email required for first provisioning */
+            /** @description Email verification required */
             403: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EmailVerificationRequiredResponse"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Existing BFF account requires explicit linking */
+            /** @description Account linking required */
             409: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AccountLinkRequiredResponse"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Authentication provider temporarily unavailable */
-            503: {
+            /** @description Internal server error */
+            500: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthenticationServiceUnavailableResponse"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Authentication service unavailable */
+            503: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -311,19 +320,34 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
                 };
             };
-            /** @description Authentication required */
+            /** @description Invalid authentication credentials */
             401: {
                 headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthenticationErrorResponse"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
