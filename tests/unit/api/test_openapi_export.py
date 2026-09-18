@@ -21,6 +21,8 @@ def test_openapi_render_is_deterministic() -> None:
         "/readyz",
         "/v1/auth/session",
         "/v1/me",
+        "/v1/workspaces",
+        "/v1/workspaces/{workspace_id}",
     ]
     session = schema["paths"]["/v1/auth/session"]["post"]
     me = schema["paths"]["/v1/me"]["get"]
