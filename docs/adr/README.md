@@ -22,3 +22,4 @@ Current series:
 - 0014 provider-neutral control-plane identity
 - 0015 durable control-plane session admission
 - 0016 bounded JWKS refresh under unknown key IDs
+- 0017 public-client login and local session provisioning
