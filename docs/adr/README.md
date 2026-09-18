@@ -25,3 +25,4 @@ Current series:
 - 0017 public-client login and local session provisioning
 - 0018 structured API problem details
 - 0019 request context and transport middleware
+- 0020 Workspace authorization boundary

@@ -16,6 +16,7 @@ Initial codes:
 | `AUTH_EMAIL_VERIFICATION_REQUIRED` | 403 | no | First provisioning requires verified provider email |
 | `AUTH_ACCOUNT_LINK_REQUIRED` | 409 | no | Explicit identity linking is required |
 | `AUTH_PROVIDER_UNAVAILABLE` | 503 | yes | Authentication provider/profile service is unavailable |
+| `WORKSPACE_NOT_FOUND` | 404 | no | Workspace is absent or not visible to the authenticated User |
 | `REQUEST_VALIDATION_FAILED` | 422 | no | Request validation failed |
 | `REQUEST_NOT_FOUND` | 404 | no | Endpoint was not found |
 | `REQUEST_METHOD_NOT_ALLOWED` | 405 | no | Route exists but method is unsupported |
