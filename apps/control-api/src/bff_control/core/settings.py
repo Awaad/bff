@@ -68,12 +68,15 @@ class AuthenticationSettings(BaseSettings):
     jwks_unknown_kid_cooldown_seconds: NonNegativeFloat = 30.0
     jwt_leeway_seconds: NonNegativeInt = 30
     max_bearer_token_length: PositiveInt = 16_384
+    session_absolute_ttl_seconds: PositiveInt = 604_800
 
     @field_validator("issuer")
     @classmethod
     def validate_issuer(cls, value: str) -> str:
         if not value or value != value.strip():
-            raise ValueError("issuer must be a non-empty exact URL without surrounding whitespace")
+            raise ValueError(
+                "issuer must be a non-empty exact URL without surrounding whitespace"
+            )
 
         parsed = urlsplit(value)
         if (
@@ -110,6 +113,35 @@ def get_authentication_settings() -> AuthenticationSettings:
     """Return process-wide validated authentication settings."""
 
     return AuthenticationSettings()
+
+
+class WorkOSSettings(BaseSettings):
+    """Server-side WorkOS User Management API configuration."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="BFF_WORKOS_",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    api_key: SecretStr
+    api_base_url: AnyHttpUrl = AnyHttpUrl("https://api.workos.com")
+    user_request_timeout_seconds: PositiveFloat = 5.0
+
+    @field_validator("api_base_url")
+    @classmethod
+    def validate_api_base_url(cls, value: AnyHttpUrl) -> AnyHttpUrl:
+        if value.scheme != "https":
+            raise ValueError("WorkOS api_base_url must use HTTPS")
+        return value
+
+
+@lru_cache(maxsize=1)
+def get_workos_settings() -> WorkOSSettings:
+    """Return process-wide validated WorkOS management settings."""
+
+    return WorkOSSettings()
 
 
 class DatabaseSettings(BaseSettings):
