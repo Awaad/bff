@@ -8,6 +8,7 @@ from typing import Protocol
 from opentelemetry.trace import Tracer
 
 from bff_control.domains.authentication.contracts import PrincipalAuthenticator
+from bff_control.domains.authentication.provisioning_contracts import SessionProvisioner
 
 
 class DatabaseLifecycle(Protocol):
@@ -34,3 +35,4 @@ class ApplicationResources:
     database: DatabaseLifecycle
     telemetry: TelemetryLifecycle
     authenticator: PrincipalAuthenticator
+    session_provisioner: SessionProvisioner | None = None

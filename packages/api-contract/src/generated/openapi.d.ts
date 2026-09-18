@@ -40,6 +40,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Provision local authenticated session
+         * @description Create or reuse BFF admission from a verified provider bearer token.
+         */
+        post: operations["provisionSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -64,6 +84,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountLinkRequiredResponse */
+        AccountLinkRequiredResponse: {
+            /**
+             * Detail
+             * @constant
+             */
+            detail: "account linking required";
+        };
         /**
          * AuthenticationErrorResponse
          * @description Stable public authentication failure shape.
@@ -74,6 +102,22 @@ export interface components {
              * @constant
              */
             detail: "invalid authentication credentials";
+        };
+        /** AuthenticationServiceUnavailableResponse */
+        AuthenticationServiceUnavailableResponse: {
+            /**
+             * Detail
+             * @constant
+             */
+            detail: "authentication service unavailable";
+        };
+        /** EmailVerificationRequiredResponse */
+        EmailVerificationRequiredResponse: {
+            /**
+             * Detail
+             * @constant
+             */
+            detail: "email verification required";
         };
         /** LivenessResponse */
         LivenessResponse: {
@@ -98,6 +142,21 @@ export interface components {
              */
             id: string;
         };
+        /**
+         * ProvisionedUserResponse
+         * @description Public BFF User fields returned after local admission.
+         */
+        ProvisionedUserResponse: {
+            /** Display Name */
+            display_name: string | null;
+            /** Email */
+            email: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
         /** ReadinessResponse */
         ReadinessResponse: {
             /**
@@ -105,6 +164,26 @@ export interface components {
              * @enum {string}
              */
             status: "ready" | "not_ready";
+        };
+        /**
+         * SessionProvisioningResponse
+         * @description Idempotent local admission result.
+         */
+        SessionProvisioningResponse: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            user: components["schemas"]["ProvisionedUserResponse"];
+        };
+        /** AuthenticationErrorResponse */
+        bff_control__api__session_provisioning__AuthenticationErrorResponse: {
+            /**
+             * Detail
+             * @constant
+             */
+            detail: "invalid authentication credentials";
         };
     };
     responses: never;
@@ -160,6 +239,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReadinessResponse"];
+                };
+            };
+        };
+    };
+    provisionSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionProvisioningResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["bff_control__api__session_provisioning__AuthenticationErrorResponse"];
+                };
+            };
+            /** @description Verified email required for first provisioning */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailVerificationRequiredResponse"];
+                };
+            };
+            /** @description Existing BFF account requires explicit linking */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountLinkRequiredResponse"];
+                };
+            };
+            /** @description Authentication provider temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthenticationServiceUnavailableResponse"];
                 };
             };
         };

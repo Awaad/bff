@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from bff_control.api.contracts import ApplicationResources
 from bff_control.api.health import router as health_router
 from bff_control.api.me import router as me_router
+from bff_control.api.session_provisioning import router as session_provisioning_router
 
 ResourceFactory = Callable[[], ApplicationResources]
 
@@ -24,6 +25,7 @@ def create_app(*, resource_factory: ResourceFactory) -> FastAPI:
         app.state.database = resources.database
         app.state.telemetry = resources.telemetry
         app.state.authenticator = resources.authenticator
+        app.state.session_provisioner = resources.session_provisioner
 
         with resources.telemetry.tracer.start_as_current_span("control_api.startup"):
             pass
@@ -46,5 +48,6 @@ def create_app(*, resource_factory: ResourceFactory) -> FastAPI:
         lifespan=lifespan,
     )
     app.include_router(health_router)
+    app.include_router(session_provisioning_router)
     app.include_router(me_router)
     return app

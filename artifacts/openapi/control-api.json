@@ -1,6 +1,20 @@
 {
   "components": {
     "schemas": {
+      "AccountLinkRequiredResponse": {
+        "properties": {
+          "detail": {
+            "const": "account linking required",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "AccountLinkRequiredResponse",
+        "type": "object"
+      },
       "AuthenticationErrorResponse": {
         "description": "Stable public authentication failure shape.",
         "properties": {
@@ -14,6 +28,34 @@
           "detail"
         ],
         "title": "AuthenticationErrorResponse",
+        "type": "object"
+      },
+      "AuthenticationServiceUnavailableResponse": {
+        "properties": {
+          "detail": {
+            "const": "authentication service unavailable",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "AuthenticationServiceUnavailableResponse",
+        "type": "object"
+      },
+      "EmailVerificationRequiredResponse": {
+        "properties": {
+          "detail": {
+            "const": "email verification required",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "EmailVerificationRequiredResponse",
         "type": "object"
       },
       "LivenessResponse": {
@@ -62,6 +104,38 @@
         "title": "MeResponse",
         "type": "object"
       },
+      "ProvisionedUserResponse": {
+        "description": "Public BFF User fields returned after local admission.",
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "display_name"
+        ],
+        "title": "ProvisionedUserResponse",
+        "type": "object"
+      },
       "ReadinessResponse": {
         "properties": {
           "status": {
@@ -77,6 +151,39 @@
           "status"
         ],
         "title": "ReadinessResponse",
+        "type": "object"
+      },
+      "SessionProvisioningResponse": {
+        "description": "Idempotent local admission result.",
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/ProvisionedUserResponse"
+          }
+        },
+        "required": [
+          "user",
+          "expires_at"
+        ],
+        "title": "SessionProvisioningResponse",
+        "type": "object"
+      },
+      "bff_control__api__session_provisioning__AuthenticationErrorResponse": {
+        "properties": {
+          "detail": {
+            "const": "invalid authentication credentials",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "AuthenticationErrorResponse",
         "type": "object"
       }
     },
@@ -144,6 +251,73 @@
         "summary": "Readiness probe",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/v1/auth/session": {
+      "post": {
+        "description": "Create or reuse BFF admission from a verified provider bearer token.",
+        "operationId": "provisionSession",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionProvisioningResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/bff_control__api__session_provisioning__AuthenticationErrorResponse"
+                }
+              }
+            },
+            "description": "Authentication failed"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailVerificationRequiredResponse"
+                }
+              }
+            },
+            "description": "Verified email required for first provisioning"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountLinkRequiredResponse"
+                }
+              }
+            },
+            "description": "Existing BFF account requires explicit linking"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationServiceUnavailableResponse"
+                }
+              }
+            },
+            "description": "Authentication provider temporarily unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Provision local authenticated session",
+        "tags": [
+          "authentication"
         ]
       }
     },

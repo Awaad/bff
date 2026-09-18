@@ -3,9 +3,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from fastapi.testclient import TestClient
-from opentelemetry import trace
-
 from bff_control.api.app import create_app
 from bff_control.api.contracts import ApplicationResources
 from bff_control.domains.authentication.models import AuthenticatedPrincipal
@@ -16,6 +13,8 @@ from bff_control.domains.authentication.provisioning_contracts import (
     SessionProvisioningAuthenticationError,
 )
 from bff_control.domains.authentication.provisioning_models import ProvisionedSession
+from fastapi.testclient import TestClient
+from opentelemetry import trace
 
 
 class FakeDatabase:
