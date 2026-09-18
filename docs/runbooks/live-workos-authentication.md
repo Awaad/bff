@@ -23,38 +23,54 @@ processes, not browser JavaScript.
 
 ## Local environment
 
-`WORKOS_CLIENT_ID` is not read by the BFF control API. Use:
+Use one client ID consistently across the AuthKit settings:
 
 ```dotenv
 BFF_WORKOS_API_KEY=sk_test_<real value>
 BFF_AUTH_CLIENT_ID=client_<real value>
-
-BFF_AUTH_ISSUER=https://api.workos.com
+BFF_AUTH_ISSUER=https://api.workos.com/user_management/client_<real value>
 BFF_AUTH_JWKS_URL=https://api.workos.com/sso/jwks/client_<real value>
 ```
 
-Keep the existing local database values.
+The issuer must match the verified access token's `iss` exactly. Do not configure
+the bare `https://api.workos.com` origin as the issuer for this AuthKit flow.
 
-If the WorkOS application uses a custom authentication domain, do not use the
-default issuer/JWKS values above. Configure its exact issuer/JWKS contract.
+WorkOS OIDC discovery for the application can be inspected at:
+
+```text
+https://api.workos.com/user_management/<client_id>/.well-known/openid-configuration
+```
+
+If a custom authentication domain is introduced later, configure the exact
+trusted issuer/JWKS contract advertised for that environment rather than making
+issuer validation permissive.
 
 Never commit `.env`.
 
-## Start dependencies
+Run the strict local check before the live proof:
 
 ```bash
-docker compose --env-file .env up -d postgres
+make doctor-auth
 ```
 
-Ensure migrations and roles are current using the repository's normal local
-database procedure.
+## Start dependencies and database
+
+The normal local path is:
+
+```bash
+make infra-up
+make db-sync
+```
+
+`db-sync` runs real migrations and reapplies current application roles. It does
+not stamp or recreate the database.
 
 ## Start the control API
 
 In one terminal:
 
 ```bash
-uv run uvicorn bff_control.main:app   --host 127.0.0.1   --port 8000
+make api
 ```
 
 Check:
@@ -71,7 +87,7 @@ Both must succeed before running the live probe.
 In a second terminal:
 
 ```bash
-uv run python scripts/auth/workos_live_probe.py
+make auth-live
 ```
 
 The script:
@@ -93,17 +109,26 @@ are never printed or written to disk.
 If automatic browser opening is unavailable:
 
 ```bash
-uv run python scripts/auth/workos_live_probe.py   --print-authorization-url
+uv run python scripts/auth/workos_live_probe.py --print-authorization-url
 ```
 
 Treat that one-time URL as ephemeral authentication material.
 
-## First-time provisioning proof
+## Expected proof
+
+A successful run prints:
+
+```text
+PASS: WorkOS PKCE authorization-code flow
+PASS: access-token issuer/client configuration
+PASS: WorkOS server-side User lookup
+PASS: BFF durable session provisioning
+PASS: BFF same-sid idempotent reuse without TTL extension
+PASS: authenticated /v1/me
+```
 
 For the strongest first run, authenticate a WorkOS User that has never been mapped
-into the local BFF database.
-
-That proves:
+into the local BFF database. That proves:
 
 ```text
 verified WorkOS access token

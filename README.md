@@ -83,19 +83,33 @@ Exact package names may change during Phase 0 without changing the domain contra
 
 ## Local development
 
-The implementation bootstrap is not committed yet. Phase 0 will add:
+Copy the local template once, edit machine-specific values, then use the root
+Makefile as the developer interface:
 
-- Python/Poetry environment
-- Node workspace/package manager
-- PostgreSQL
-- RabbitMQ
-- Valkey
-- Alembic
-- OpenTelemetry
-- Docker Compose
-- CI
+```bash
+cp .env.example .env
+make bootstrap
+make api
+```
 
-Once those exist, this section must be replaced with executable commands rather than aspirational instructions.
+Useful commands:
+
+```bash
+make help
+make doctor
+make db-sync
+make auth-live
+make test
+make check
+```
+
+`make bootstrap` is non-destructive: it installs locked dependencies, starts local
+infrastructure, runs real Alembic migrations, and reapplies the current database
+application-role policy. It never deletes Docker volumes or stamps unapplied
+migrations as complete.
+
+See [`docs/development/local-development.md`](docs/development/local-development.md)
+for the complete workflow and the stricter WorkOS environment checks.
 
 ## Database
 
