@@ -173,8 +173,16 @@ def test_openapi_contains_foundation_and_authenticated_identity_routes() -> None
     )
     schema = app.openapi()
 
-    assert sorted(schema["paths"]) == ["/livez", "/readyz", "/v1/me"]
+    assert sorted(schema["paths"]) == [
+        "/livez",
+        "/readyz",
+        "/v1/auth/session",
+        "/v1/me",
+    ]
     assert schema["paths"]["/livez"]["get"]["operationId"] == "livez"
     assert schema["paths"]["/readyz"]["get"]["operationId"] == "readyz"
+    assert schema["paths"]["/v1/auth/session"]["post"]["operationId"] == (
+        "provisionSession"
+    )
     assert schema["paths"]["/v1/me"]["get"]["operationId"] == "getMe"
     assert schema["paths"]["/v1/me"]["get"]["security"] == [{"HTTPBearer": []}]
