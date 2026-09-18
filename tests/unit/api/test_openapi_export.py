@@ -30,10 +30,27 @@ def test_openapi_render_is_deterministic() -> None:
     assert session["security"] == [{"HTTPBearer": []}]
     assert me["operationId"] == "getMe"
     assert me["security"] == [{"HTTPBearer": []}]
-    for operation in (session, me):
+
+    workspaces = schema["paths"]["/v1/workspaces"]["get"]
+    workspace = schema["paths"]["/v1/workspaces/{workspace_id}"]["get"]
+
+    assert workspaces["operationId"] == "listWorkspaces"
+    assert workspaces["security"] == [{"HTTPBearer": []}]
+
+    assert workspace["operationId"] == "getWorkspace"
+    assert workspace["security"] == [{"HTTPBearer": []}]
+    for operation in (session, me, workspaces, workspace):
         assert "500" in operation["responses"]
+
         for response in operation["responses"].values():
             assert "X-Request-ID" in response["headers"]
     assert "application/problem+json" in session["responses"]["401"]["content"]
     assert "application/problem+json" in session["responses"]["500"]["content"]
     assert "application/problem+json" in me["responses"]["401"]["content"]
+
+    assert "application/problem+json" in workspaces["responses"]["401"]["content"]
+    assert "application/problem+json" in workspace["responses"]["401"]["content"]
+    assert "application/problem+json" in workspace["responses"]["404"]["content"]
+
+    assert "application/problem+json" in workspaces["responses"]["500"]["content"]
+    assert "application/problem+json" in workspace["responses"]["500"]["content"]
