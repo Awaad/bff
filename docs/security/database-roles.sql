@@ -1,5 +1,5 @@
 -- Backend for Framer — current database application-role policy
--- Current through migration 0003_auth_sessions.
+-- Current through migration 0004_project_pagination.
 -- Run as the same schema/migration owner that creates future objects.
 
 DO $$

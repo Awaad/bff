@@ -1,7 +1,7 @@
 -- Backend for Framer
 -- Canonical PostgreSQL desired schema
 -- Baseline: V2.1 frozen 2026-09-13
--- Current through: 0003_auth_sessions — 2026-09-17
+-- Current through: 0004_project_pagination, 2026-09-21
 -- Supersedes: Baseline V1 integrity review
 --
 -- IDs are application-generated UUIDv7. No database UUIDv7 function is assumed.
@@ -1380,6 +1380,7 @@ CREATE TABLE audit_events (
 -- -----------------------------------------------------------------------------
 
 CREATE INDEX idx_projects_workspace_status ON projects(workspace_id, status);
+CREATE INDEX idx_projects_workspace_created_id ON projects(workspace_id, created_at DESC, id DESC);
 CREATE INDEX idx_connections_workspace_status ON connections(workspace_id, status);
 CREATE INDEX idx_credentials_workspace_connection_status ON credentials(workspace_id, connection_id, status);
 CREATE INDEX idx_operations_workspace_connection_status ON operations(workspace_id, connection_id, status);
