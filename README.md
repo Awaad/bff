@@ -2,7 +2,8 @@
 
 A Framer-first hosted backend for secure API calls, actions, jobs, webhooks, synchronization, and operational visibility.
 
-> Status: architecture/specification complete; implementation starting from Schema Baseline V2.
+> Status: repository, authentication, HTTP transport, developer bootstrap, and
+> Workspace authorization are implemented. Project is the next Phase 1 domain.
 
 ## Why
 
