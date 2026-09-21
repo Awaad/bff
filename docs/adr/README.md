@@ -26,3 +26,4 @@ Current series:
 - 0018 structured API problem details
 - 0019 request context and transport middleware
 - 0020 Workspace authorization boundary
+- 0021 Project authorization boundary
