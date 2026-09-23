@@ -26,6 +26,12 @@ from bff_control.domains.authentication.provisioning_contracts import (
     ExternalUserProfileUnavailableError,
     SessionProvisioningAuthenticationError,
 )
+from bff_control.domains.projects.contracts import (
+    ProjectNotFoundError,
+    ProjectPermissionDeniedError,
+    ProjectWorkspaceNotActiveError,
+    ProjectWorkspaceNotFoundError,
+)
 from bff_control.domains.workspaces.contracts import WorkspaceNotFoundError
 
 _PROBLEM_LOGGER = logging.getLogger("bff_control.api.problems")
@@ -154,6 +160,30 @@ async def _workspace_not_found_handler(
     return _problem_response(request, ProblemCode.WORKSPACE_NOT_FOUND)
 
 
+async def _project_not_found_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    del exc
+    return _problem_response(request, ProblemCode.PROJECT_NOT_FOUND)
+
+
+async def _workspace_permission_denied_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    del exc
+    return _problem_response(request, ProblemCode.WORKSPACE_PERMISSION_DENIED)
+
+
+async def _workspace_not_active_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    del exc
+    return _problem_response(request, ProblemCode.WORKSPACE_NOT_ACTIVE)
+
+
 async def _validation_handler(
     request: Request,
     exc: Exception,
@@ -260,6 +290,19 @@ def register_problem_handlers(app: FastAPI) -> None:
         _provider_unavailable_handler,
     )
     app.add_exception_handler(WorkspaceNotFoundError, _workspace_not_found_handler)
+    app.add_exception_handler(
+        ProjectWorkspaceNotFoundError,
+        _workspace_not_found_handler,
+    )
+    app.add_exception_handler(ProjectNotFoundError, _project_not_found_handler)
+    app.add_exception_handler(
+        ProjectPermissionDeniedError,
+        _workspace_permission_denied_handler,
+    )
+    app.add_exception_handler(
+        ProjectWorkspaceNotActiveError,
+        _workspace_not_active_handler,
+    )
     app.add_exception_handler(RequestValidationError, _validation_handler)
     app.add_exception_handler(404, _not_found_handler)
     app.add_exception_handler(405, _method_not_allowed_handler)

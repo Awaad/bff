@@ -9,6 +9,7 @@ from opentelemetry.trace import Tracer
 
 from bff_control.domains.authentication.contracts import PrincipalAuthenticator
 from bff_control.domains.authentication.provisioning_contracts import SessionProvisioner
+from bff_control.domains.projects.contracts import ProjectManager
 from bff_control.domains.workspaces.contracts import WorkspaceManager
 
 
@@ -38,3 +39,4 @@ class ApplicationResources:
     authenticator: PrincipalAuthenticator
     session_provisioner: SessionProvisioner | None = None
     workspace_service: WorkspaceManager | None = None
+    project_service: ProjectManager | None = None
