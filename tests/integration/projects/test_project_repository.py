@@ -51,6 +51,7 @@ def _seed_workspace_member(
     user_id = UUID(_uuid(user_number))
     workspace_id = UUID(_uuid(workspace_number))
     email = f"project-{user_number}@example.test"
+    started_at = ended_at - timedelta(days=1) if ended_at is not None else datetime.now(tz=UTC)
     with postgres_test_db.owner_connection() as connection:
         connection.execute(
             """
@@ -73,14 +74,16 @@ def _seed_workspace_member(
                 workspace_id,
                 user_id,
                 role,
+                started_at,
                 ended_at
-            ) VALUES (%s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s)
             """,
             (
                 UUID(_uuid(membership_number)),
                 workspace_id,
                 user_id,
                 role,
+                started_at,
                 ended_at,
             ),
         )
