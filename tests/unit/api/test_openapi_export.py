@@ -23,6 +23,8 @@ def test_openapi_render_is_deterministic() -> None:
         "/v1/me",
         "/v1/workspaces",
         "/v1/workspaces/{workspace_id}",
+        "/v1/workspaces/{workspace_id}/projects",
+        "/v1/workspaces/{workspace_id}/projects/{project_id}",
     ]
     session = schema["paths"]["/v1/auth/session"]["post"]
     me = schema["paths"]["/v1/me"]["get"]
@@ -33,13 +35,26 @@ def test_openapi_render_is_deterministic() -> None:
 
     workspaces = schema["paths"]["/v1/workspaces"]["get"]
     workspace = schema["paths"]["/v1/workspaces/{workspace_id}"]["get"]
+    projects = schema["paths"]["/v1/workspaces/{workspace_id}/projects"]
+    project = schema["paths"]["/v1/workspaces/{workspace_id}/projects/{project_id}"]["get"]
 
     assert workspaces["operationId"] == "listWorkspaces"
     assert workspaces["security"] == [{"HTTPBearer": []}]
 
     assert workspace["operationId"] == "getWorkspace"
     assert workspace["security"] == [{"HTTPBearer": []}]
-    for operation in (session, me, workspaces, workspace):
+    assert projects["post"]["operationId"] == "createProject"
+    assert projects["get"]["operationId"] == "listProjects"
+    assert project["operationId"] == "getProject"
+    for operation in (
+        session,
+        me,
+        workspaces,
+        workspace,
+        projects["post"],
+        projects["get"],
+        project,
+    ):
         assert "500" in operation["responses"]
 
         for response in operation["responses"].values():
@@ -51,6 +66,11 @@ def test_openapi_render_is_deterministic() -> None:
     assert "application/problem+json" in workspaces["responses"]["401"]["content"]
     assert "application/problem+json" in workspace["responses"]["401"]["content"]
     assert "application/problem+json" in workspace["responses"]["404"]["content"]
+    assert "application/problem+json" in projects["post"]["responses"]["403"]["content"]
+    assert "application/problem+json" in projects["post"]["responses"]["409"]["content"]
+    assert "application/problem+json" in project["responses"]["404"]["content"]
 
     assert "application/problem+json" in workspaces["responses"]["500"]["content"]
     assert "application/problem+json" in workspace["responses"]["500"]["content"]
+    assert "application/problem+json" in projects["get"]["responses"]["500"]["content"]
+    assert "application/problem+json" in project["responses"]["500"]["content"]

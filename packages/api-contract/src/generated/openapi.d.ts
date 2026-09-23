@@ -103,10 +103,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspace_id}/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List projects */
+        get: operations["listProjects"];
+        put?: never;
+        /** Create project */
+        post: operations["createProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get project */
+        get: operations["getProject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CreateProjectRequest */
+        CreateProjectRequest: {
+            /** Name */
+            name: string;
+        };
         /** CreateWorkspaceRequest */
         CreateWorkspaceRequest: {
             /** Name */
@@ -137,7 +177,7 @@ export interface components {
          * @description Stable machine-readable public problem codes.
          * @enum {string}
          */
-        ProblemCode: "AUTH_INVALID_CREDENTIALS" | "AUTH_EMAIL_VERIFICATION_REQUIRED" | "AUTH_ACCOUNT_LINK_REQUIRED" | "AUTH_PROVIDER_UNAVAILABLE" | "WORKSPACE_NOT_FOUND" | "REQUEST_VALIDATION_FAILED" | "REQUEST_NOT_FOUND" | "REQUEST_METHOD_NOT_ALLOWED" | "REQUEST_REJECTED" | "INTERNAL_ERROR";
+        ProblemCode: "AUTH_INVALID_CREDENTIALS" | "AUTH_EMAIL_VERIFICATION_REQUIRED" | "AUTH_ACCOUNT_LINK_REQUIRED" | "AUTH_PROVIDER_UNAVAILABLE" | "WORKSPACE_NOT_FOUND" | "WORKSPACE_PERMISSION_DENIED" | "WORKSPACE_NOT_ACTIVE" | "PROJECT_NOT_FOUND" | "REQUEST_VALIDATION_FAILED" | "REQUEST_NOT_FOUND" | "REQUEST_METHOD_NOT_ALLOWED" | "REQUEST_REJECTED" | "INTERNAL_ERROR";
         /**
          * ProblemDetail
          * @description RFC 9457 problem plus stable BFF extensions.
@@ -161,6 +201,46 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** ProjectListResponse */
+        ProjectListResponse: {
+            /** Items */
+            items: components["schemas"]["ProjectResponse"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ProjectResponse */
+        ProjectResponse: {
+            /** Archived At */
+            archived_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            status: components["schemas"]["ProjectStatus"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * ProjectStatus
+         * @enum {string}
+         */
+        ProjectStatus: "ACTIVE" | "SUSPENDED" | "ARCHIVED" | "PENDING_DELETION";
         /** ProvisionedUserResponse */
         ProvisionedUserResponse: {
             /** Display Name */
@@ -568,6 +648,242 @@ export interface operations {
                 };
             };
             /** @description Workspace not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listProjects: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectListResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Project created */
+            201: {
+                headers: {
+                    /** @description Relative URI of the created Project. */
+                    Location?: string;
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace is not active */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Project not found */
             404: {
                 headers: {
                     /** @description Server-generated request correlation identifier. */
