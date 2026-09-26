@@ -103,6 +103,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspace_id}/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List connections */
+        get: operations["listConnections"];
+        put?: never;
+        /** Create connection */
+        post: operations["createConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/connections/{connection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get connection */
+        get: operations["getConnection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename connection */
+        patch: operations["renameConnection"];
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/connections/{connection_id}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace connection project access */
+        put: operations["replaceConnectionAccess"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/connections/{connection_id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get connection draft */
+        get: operations["getConnectionDraft"];
+        /** Replace connection draft */
+        put: operations["putConnectionDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/connections/{connection_id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List connection revisions */
+        get: operations["listConnectionRevisions"];
+        put?: never;
+        /** Publish connection revision */
+        post: operations["publishConnectionRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/connections/{connection_id}/revisions/{revision_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get connection revision */
+        get: operations["getConnectionRevision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/connections/{connection_id}:archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive connection */
+        post: operations["archiveConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/connections/{connection_id}:disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disable connection */
+        post: operations["disableConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspace_id}/connections/{connection_id}:enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable connection */
+        post: operations["enableConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspace_id}/projects": {
         parameters: {
             query?: never;
@@ -142,6 +299,171 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ConnectionAccessMode
+         * @enum {string}
+         */
+        ConnectionAccessMode: "WORKSPACE" | "SELECTED_PROJECTS";
+        /** ConnectionAccessRequest */
+        ConnectionAccessRequest: {
+            mode: components["schemas"]["ConnectionAccessMode"];
+            /** Project Ids */
+            project_ids?: string[];
+        };
+        /** ConnectionAccessResponse */
+        ConnectionAccessResponse: {
+            mode: components["schemas"]["ConnectionAccessMode"];
+            /** Project Ids */
+            project_ids: string[];
+        };
+        /** ConnectionDraftResponse */
+        ConnectionDraftResponse: {
+            /** Configuration */
+            configuration: {
+                [key: string]: unknown;
+            };
+            /**
+             * Connection Id
+             * Format: uuid
+             */
+            connection_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Updated By User Id */
+            updated_by_user_id: string | null;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /** ConnectionListResponse */
+        ConnectionListResponse: {
+            /** Items */
+            items: components["schemas"]["ConnectionResponse"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ConnectionResponse */
+        ConnectionResponse: {
+            access: components["schemas"]["ConnectionAccessResponse"];
+            /** Archived At */
+            archived_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Provider Key */
+            provider_key: string;
+            status: components["schemas"]["ConnectionStatus"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /** ConnectionRevisionListResponse */
+        ConnectionRevisionListResponse: {
+            /** Items */
+            items: components["schemas"]["ConnectionRevisionMetadataResponse"][];
+            /** Next Before Revision */
+            next_before_revision: number | null;
+        };
+        /** ConnectionRevisionMetadataResponse */
+        ConnectionRevisionMetadataResponse: {
+            /** Config Hash */
+            config_hash: string;
+            /**
+             * Connection Id
+             * Format: uuid
+             */
+            connection_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By User Id */
+            created_by_user_id: string | null;
+            /** Definition Schema Version */
+            definition_schema_version: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Revision Number */
+            revision_number: number;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /** ConnectionRevisionResponse */
+        ConnectionRevisionResponse: {
+            /** Config Hash */
+            config_hash: string;
+            /** Configuration */
+            configuration: {
+                [key: string]: unknown;
+            };
+            /**
+             * Connection Id
+             * Format: uuid
+             */
+            connection_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By User Id */
+            created_by_user_id: string | null;
+            /** Definition Schema Version */
+            definition_schema_version: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Revision Number */
+            revision_number: number;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * ConnectionStatus
+         * @enum {string}
+         */
+        ConnectionStatus: "DRAFT" | "ACTIVE" | "DISABLED" | "ARCHIVED";
+        /** CreateConnectionRequest */
+        CreateConnectionRequest: {
+            access: components["schemas"]["ConnectionAccessRequest"];
+            /** Name */
+            name: string;
+            /** Provider Key */
+            provider_key: string;
+        };
         /** CreateProjectRequest */
         CreateProjectRequest: {
             /** Name */
@@ -177,7 +499,7 @@ export interface components {
          * @description Stable machine-readable public problem codes.
          * @enum {string}
          */
-        ProblemCode: "AUTH_INVALID_CREDENTIALS" | "AUTH_EMAIL_VERIFICATION_REQUIRED" | "AUTH_ACCOUNT_LINK_REQUIRED" | "AUTH_PROVIDER_UNAVAILABLE" | "WORKSPACE_NOT_FOUND" | "WORKSPACE_PERMISSION_DENIED" | "WORKSPACE_NOT_ACTIVE" | "PROJECT_NOT_FOUND" | "REQUEST_VALIDATION_FAILED" | "REQUEST_NOT_FOUND" | "REQUEST_METHOD_NOT_ALLOWED" | "REQUEST_REJECTED" | "INTERNAL_ERROR";
+        ProblemCode: "AUTH_INVALID_CREDENTIALS" | "AUTH_EMAIL_VERIFICATION_REQUIRED" | "AUTH_ACCOUNT_LINK_REQUIRED" | "AUTH_PROVIDER_UNAVAILABLE" | "WORKSPACE_NOT_FOUND" | "WORKSPACE_PERMISSION_DENIED" | "WORKSPACE_NOT_ACTIVE" | "PROJECT_NOT_FOUND" | "CONNECTION_NOT_FOUND" | "CONNECTION_STATE_CONFLICT" | "REQUEST_VALIDATION_FAILED" | "REQUEST_NOT_FOUND" | "REQUEST_METHOD_NOT_ALLOWED" | "REQUEST_REJECTED" | "INTERNAL_ERROR";
         /**
          * ProblemDetail
          * @description RFC 9457 problem plus stable BFF extensions.
@@ -253,6 +575,13 @@ export interface components {
              */
             id: string;
         };
+        /** PutConnectionDraftRequest */
+        PutConnectionDraftRequest: {
+            /** Configuration */
+            configuration: {
+                [key: string]: unknown;
+            };
+        };
         /** ReadinessResponse */
         ReadinessResponse: {
             /**
@@ -260,6 +589,11 @@ export interface components {
              * @enum {string}
              */
             status: "ready" | "not_ready";
+        };
+        /** RenameConnectionRequest */
+        RenameConnectionRequest: {
+            /** Name */
+            name: string;
         };
         /** SessionProvisioningResponse */
         SessionProvisioningResponse: {
@@ -649,6 +983,1168 @@ export interface operations {
             };
             /** @description Workspace not found */
             404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listConnections: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionListResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Connection created */
+            201: {
+                headers: {
+                    /** @description Relative URI of the created Connection. */
+                    Location?: string;
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or selected Project not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace is not active */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    renameConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    replaceConnectionAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectionAccessRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getConnectionDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionDraftResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    putConnectionDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutConnectionDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionDraftResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listConnectionRevisions: {
+        parameters: {
+            query?: {
+                before_revision?: number | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionRevisionListResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    publishConnectionRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionRevisionResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getConnectionRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionRevisionResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    archiveConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    disableConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    enableConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Invalid authentication credentials */
+            401: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace permission denied */
+            403: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection not found */
+            404: {
+                headers: {
+                    /** @description Server-generated request correlation identifier. */
+                    "X-Request-ID"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Workspace or Connection lifecycle conflict */
+            409: {
                 headers: {
                     /** @description Server-generated request correlation identifier. */
                     "X-Request-ID"?: string;
