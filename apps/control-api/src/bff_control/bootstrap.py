@@ -12,10 +12,15 @@ from bff_control.core.settings import (
 )
 from bff_control.domains.authentication.provisioning import SessionProvisioningService
 from bff_control.domains.authentication.service import AuthenticationService
+from bff_control.domains.connections.providers import ConnectionProviderRegistry
+from bff_control.domains.connections.service import ConnectionService
 from bff_control.domains.projects.service import ProjectService
 from bff_control.domains.workspaces.service import WorkspaceService
 from bff_control.infrastructure.auth.workos import WorkOSAccessTokenVerifier
 from bff_control.infrastructure.auth.workos_profile import WorkOSUserProfileClient
+from bff_control.infrastructure.db.connection_repository import (
+    SqlAlchemyConnectionRepository,
+)
 from bff_control.infrastructure.db.database import Database
 from bff_control.infrastructure.db.principal_repository import (
     SqlAlchemyPrincipalRepository,
@@ -51,6 +56,12 @@ def _resource_factory() -> ApplicationResources:
     project_repository = SqlAlchemyProjectRepository(database)
     project_service = ProjectService(project_repository)
 
+    connection_repository = SqlAlchemyConnectionRepository(database)
+    connection_service = ConnectionService(
+        connection_repository,
+        ConnectionProviderRegistry.default(),
+    )
+
     telemetry = configure_telemetry(get_application_settings())
 
     return ApplicationResources(
@@ -60,6 +71,7 @@ def _resource_factory() -> ApplicationResources:
         session_provisioner=session_provisioner,
         workspace_service=workspace_service,
         project_service=project_service,
+        connection_service=connection_service,
     )
 
 

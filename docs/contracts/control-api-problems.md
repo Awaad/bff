@@ -20,6 +20,8 @@ Initial codes:
 | `WORKSPACE_PERMISSION_DENIED` | 403 | no | Active Workspace role does not permit the operation |
 | `WORKSPACE_NOT_ACTIVE` | 409 | no | Workspace lifecycle does not permit the operation |
 | `PROJECT_NOT_FOUND` | 404 | no | Project is absent or outside the authorized Workspace |
+| `CONNECTION_NOT_FOUND` | 404 | no | Connection is absent or outside the authorized Workspace |
+| `CONNECTION_STATE_CONFLICT` | 409 | no | Connection lifecycle blocks the requested operation |
 | `REQUEST_VALIDATION_FAILED` | 422 | no | Request validation failed |
 | `REQUEST_NOT_FOUND` | 404 | no | Endpoint was not found |
 | `REQUEST_METHOD_NOT_ALLOWED` | 405 | no | Route exists but method is unsupported |

@@ -11,6 +11,7 @@ from bff_control.api.problems.handlers import register_problem_handlers
 from bff_control.api.problems.openapi import ControlApi
 from bff_control.api.routes.health import router as health_router
 from bff_control.api.routes.v1.auth import router as auth_router
+from bff_control.api.routes.v1.connections import router as connections_router
 from bff_control.api.routes.v1.identity import router as identity_router
 from bff_control.api.routes.v1.projects import router as projects_router
 from bff_control.api.routes.v1.workspaces import router as workspaces_router
@@ -28,6 +29,7 @@ def create_app(*, resource_factory: ResourceFactory) -> ControlApi:
         app.state.session_provisioner = resources.session_provisioner
         app.state.workspace_service = resources.workspace_service
         app.state.project_service = resources.project_service
+        app.state.connection_service = resources.connection_service
         with resources.telemetry.tracer.start_as_current_span("control_api.startup"):
             pass
         try:
@@ -54,4 +56,5 @@ def create_app(*, resource_factory: ResourceFactory) -> ControlApi:
     app.include_router(identity_router)
     app.include_router(workspaces_router)
     app.include_router(projects_router)
+    app.include_router(connections_router)
     return app

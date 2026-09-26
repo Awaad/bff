@@ -84,6 +84,22 @@ PROBLEM_SPECS: Final[dict[ProblemCode, ProblemSpec]] = {
         detail="The requested Project was not found.",
         retryable=False,
     ),
+    ProblemCode.CONNECTION_NOT_FOUND: ProblemSpec(
+        code=ProblemCode.CONNECTION_NOT_FOUND,
+        type_uri="urn:uuid:7c131d55-c5eb-594c-b431-88a69b45ad9e",
+        title="Connection not found",
+        status=404,
+        detail="The requested Connection was not found.",
+        retryable=False,
+    ),
+    ProblemCode.CONNECTION_STATE_CONFLICT: ProblemSpec(
+        code=ProblemCode.CONNECTION_STATE_CONFLICT,
+        type_uri="urn:uuid:4ca5a5c5-128c-53b8-820d-ea94dd6d400e",
+        title="Connection state conflict",
+        status=409,
+        detail="The Connection lifecycle does not permit this operation.",
+        retryable=False,
+    ),
     ProblemCode.REQUEST_VALIDATION_FAILED: ProblemSpec(
         code=ProblemCode.REQUEST_VALIDATION_FAILED,
         type_uri="urn:uuid:542c876a-0825-5cc6-a84b-f55bccc0087a",

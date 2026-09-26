@@ -26,6 +26,15 @@ from bff_control.domains.authentication.provisioning_contracts import (
     ExternalUserProfileUnavailableError,
     SessionProvisioningAuthenticationError,
 )
+from bff_control.domains.connections.contracts import (
+    ConnectionConfigurationInvalidError,
+    ConnectionNotFoundError,
+    ConnectionPermissionDeniedError,
+    ConnectionProjectNotFoundError,
+    ConnectionStateConflictError,
+    ConnectionWorkspaceNotActiveError,
+    ConnectionWorkspaceNotFoundError,
+)
 from bff_control.domains.projects.contracts import (
     ProjectNotFoundError,
     ProjectPermissionDeniedError,
@@ -168,6 +177,30 @@ async def _project_not_found_handler(
     return _problem_response(request, ProblemCode.PROJECT_NOT_FOUND)
 
 
+async def _connection_not_found_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    del exc
+    return _problem_response(request, ProblemCode.CONNECTION_NOT_FOUND)
+
+
+async def _connection_state_conflict_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    del exc
+    return _problem_response(request, ProblemCode.CONNECTION_STATE_CONFLICT)
+
+
+async def _connection_configuration_invalid_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    del exc
+    return _problem_response(request, ProblemCode.REQUEST_VALIDATION_FAILED)
+
+
 async def _workspace_permission_denied_handler(
     request: Request,
     exc: Exception,
@@ -295,6 +328,31 @@ def register_problem_handlers(app: FastAPI) -> None:
         _workspace_not_found_handler,
     )
     app.add_exception_handler(ProjectNotFoundError, _project_not_found_handler)
+    app.add_exception_handler(
+        ConnectionWorkspaceNotFoundError,
+        _workspace_not_found_handler,
+    )
+    app.add_exception_handler(ConnectionNotFoundError, _connection_not_found_handler)
+    app.add_exception_handler(
+        ConnectionProjectNotFoundError,
+        _project_not_found_handler,
+    )
+    app.add_exception_handler(
+        ConnectionPermissionDeniedError,
+        _workspace_permission_denied_handler,
+    )
+    app.add_exception_handler(
+        ConnectionWorkspaceNotActiveError,
+        _workspace_not_active_handler,
+    )
+    app.add_exception_handler(
+        ConnectionStateConflictError,
+        _connection_state_conflict_handler,
+    )
+    app.add_exception_handler(
+        ConnectionConfigurationInvalidError,
+        _connection_configuration_invalid_handler,
+    )
     app.add_exception_handler(
         ProjectPermissionDeniedError,
         _workspace_permission_denied_handler,

@@ -23,6 +23,15 @@ def test_openapi_render_is_deterministic() -> None:
         "/v1/me",
         "/v1/workspaces",
         "/v1/workspaces/{workspace_id}",
+        "/v1/workspaces/{workspace_id}/connections",
+        "/v1/workspaces/{workspace_id}/connections/{connection_id}",
+        "/v1/workspaces/{workspace_id}/connections/{connection_id}/access",
+        "/v1/workspaces/{workspace_id}/connections/{connection_id}/draft",
+        "/v1/workspaces/{workspace_id}/connections/{connection_id}/revisions",
+        "/v1/workspaces/{workspace_id}/connections/{connection_id}/revisions/{revision_id}",
+        "/v1/workspaces/{workspace_id}/connections/{connection_id}:archive",
+        "/v1/workspaces/{workspace_id}/connections/{connection_id}:disable",
+        "/v1/workspaces/{workspace_id}/connections/{connection_id}:enable",
         "/v1/workspaces/{workspace_id}/projects",
         "/v1/workspaces/{workspace_id}/projects/{project_id}",
     ]
@@ -37,6 +46,8 @@ def test_openapi_render_is_deterministic() -> None:
     workspace = schema["paths"]["/v1/workspaces/{workspace_id}"]["get"]
     projects = schema["paths"]["/v1/workspaces/{workspace_id}/projects"]
     project = schema["paths"]["/v1/workspaces/{workspace_id}/projects/{project_id}"]["get"]
+    connections = schema["paths"]["/v1/workspaces/{workspace_id}/connections"]
+    connection = schema["paths"]["/v1/workspaces/{workspace_id}/connections/{connection_id}"]
 
     assert workspaces["operationId"] == "listWorkspaces"
     assert workspaces["security"] == [{"HTTPBearer": []}]
@@ -46,6 +57,10 @@ def test_openapi_render_is_deterministic() -> None:
     assert projects["post"]["operationId"] == "createProject"
     assert projects["get"]["operationId"] == "listProjects"
     assert project["operationId"] == "getProject"
+    assert connections["post"]["operationId"] == "createConnection"
+    assert connections["get"]["operationId"] == "listConnections"
+    assert connection["get"]["operationId"] == "getConnection"
+    assert connection["patch"]["operationId"] == "renameConnection"
     for operation in (
         session,
         me,
@@ -54,6 +69,10 @@ def test_openapi_render_is_deterministic() -> None:
         projects["post"],
         projects["get"],
         project,
+        connections["post"],
+        connections["get"],
+        connection["get"],
+        connection["patch"],
     ):
         assert "500" in operation["responses"]
 
