@@ -146,6 +146,84 @@ def test_control_cannot_mutate_binding_identity(
         )
 
 
+@pytest.mark.parametrize("column", ["workspace_id", "provider_key"])
+def test_control_cannot_mutate_connection_identity(
+    postgres_test_db: DatabaseTestEnvironment,
+    column: str,
+) -> None:
+    values = {
+        "workspace_id": IDS["workspace_2"],
+        "provider_key": "changed-provider",
+    }
+
+    with (
+        postgres_test_db.role_connection("control") as connection,
+        pytest.raises(psycopg.errors.InsufficientPrivilege),
+    ):
+        connection.execute(
+            f"UPDATE app.connections SET {column} = %s WHERE id = %s",
+            (values[column], IDS["connection_1"]),
+        )
+
+
+def test_control_can_update_connection_mutable_columns(
+    postgres_test_db: DatabaseTestEnvironment,
+) -> None:
+    with postgres_test_db.role_connection("control") as connection:
+        connection.execute(
+            """
+            UPDATE app.connections
+            SET name = 'Renamed Connection', access_mode = 'SELECTED_PROJECTS'
+            WHERE id = %s
+            """,
+            (IDS["connection_1"],),
+        )
+        row = connection.execute(
+            "SELECT name, access_mode FROM app.connections WHERE id = %s",
+            (IDS["connection_1"],),
+        ).fetchone()
+
+    assert row == ("Renamed Connection", "SELECTED_PROJECTS")
+
+
+def test_control_can_delete_connection_project_access(
+    postgres_test_db: DatabaseTestEnvironment,
+) -> None:
+    with postgres_test_db.role_connection("control") as connection:
+        connection.execute(
+            """
+            INSERT INTO app.connection_project_access (
+                workspace_id, connection_id, project_id
+            ) VALUES (%s, %s, %s)
+            """,
+            (IDS["workspace_1"], IDS["connection_1"], IDS["project_1"]),
+        )
+        connection.execute(
+            """
+            DELETE FROM app.connection_project_access
+            WHERE connection_id = %s AND project_id = %s
+            """,
+            (IDS["connection_1"], IDS["project_1"]),
+        )
+
+
+def test_worker_cannot_author_connection_state(
+    postgres_test_db: DatabaseTestEnvironment,
+) -> None:
+    with (
+        postgres_test_db.role_connection("worker") as connection,
+        pytest.raises(psycopg.errors.InsufficientPrivilege),
+    ):
+        connection.execute(
+            """
+            UPDATE app.connections
+            SET name = 'Worker Mutation'
+            WHERE id = %s
+            """,
+            (IDS["connection_1"],),
+        )
+
+
 def test_runtime_can_update_execution_attempt_lifecycle(
     postgres_test_db: DatabaseTestEnvironment,
 ) -> None:

@@ -1382,6 +1382,7 @@ CREATE TABLE audit_events (
 CREATE INDEX idx_projects_workspace_status ON projects(workspace_id, status);
 CREATE INDEX idx_projects_workspace_created_id ON projects(workspace_id, created_at DESC, id DESC);
 CREATE INDEX idx_connections_workspace_status ON connections(workspace_id, status);
+CREATE INDEX idx_connections_workspace_created_id ON connections(workspace_id, created_at DESC, id DESC);
 CREATE INDEX idx_credentials_workspace_connection_status ON credentials(workspace_id, connection_id, status);
 CREATE INDEX idx_operations_workspace_connection_status ON operations(workspace_id, connection_id, status);
 CREATE INDEX idx_bindings_project_status ON bindings(project_id, status);

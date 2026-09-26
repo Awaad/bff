@@ -1,5 +1,5 @@
 -- Backend for Framer — current database application-role policy
--- Current through migration 0004_project_pagination.
+-- Current through migration 0005_connection_control_plane.
 -- Run as the same schema/migration owner that creates future objects.
 
 DO $$
@@ -23,6 +23,27 @@ TO bff_control_writer, bff_runtime_writer, bff_worker_writer, bff_retention;
 
 -- Control plane.
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA app TO bff_control_writer;
+
+-- Connection ownership and provider identity are immutable. Draft parent
+-- identity is also immutable, while selected access is replaced by delete/insert.
+REVOKE UPDATE ON app.connections FROM bff_control_writer;
+GRANT UPDATE (
+    name,
+    access_mode,
+    status,
+    updated_at,
+    archived_at
+) ON app.connections TO bff_control_writer;
+
+REVOKE UPDATE ON app.connection_drafts FROM bff_control_writer;
+GRANT UPDATE (
+    draft_json,
+    updated_by_user_id,
+    updated_at
+) ON app.connection_drafts TO bff_control_writer;
+
+REVOKE UPDATE ON app.connection_project_access FROM bff_control_writer;
+GRANT DELETE ON app.connection_project_access TO bff_control_writer;
 
 -- Binding kind/exposure are stable identity attributes.
 REVOKE UPDATE ON app.bindings FROM bff_control_writer;
@@ -90,6 +111,14 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA app TO bff_worker_writer;
 -- This revoke must remain after the blanket worker grant so UPDATE is not
 -- accidentally reintroduced by statement ordering.
 REVOKE UPDATE ON app.bindings FROM bff_worker_writer;
+
+-- Workers do not author Connection identities, drafts, revisions, or access.
+REVOKE INSERT, UPDATE ON
+    app.connections,
+    app.connection_drafts,
+    app.connection_revisions,
+    app.connection_project_access
+FROM bff_worker_writer;
 
 -- Authentication identities are control-plane security state.
 REVOKE ALL PRIVILEGES ON app.user_auth_identities
